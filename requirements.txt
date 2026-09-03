@@ -1,0 +1,4 @@
+# Chi can cho viec HUAN LUYEN mang (tools/train.py).
+# Engine (engine/) chay bang Python thuan, khong can thu vien nao.
+torch>=2.0
+numpy>=1.24

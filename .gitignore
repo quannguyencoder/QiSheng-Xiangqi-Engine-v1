@@ -7,3 +7,12 @@ __pycache__/
 
 # Claude Code local state
 .claude/
+
+# Hang doi BFS + log cua crawler (trang thai tam thoi, khong phai du lieu)
+data/frontier_s*.txt
+data/handoff_s*.txt
+data/handoff_s*.offset
+data/crawl_s*.log
+
+# Backup trong so cu
+weights/*.bak

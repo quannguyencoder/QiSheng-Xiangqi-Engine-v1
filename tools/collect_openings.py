@@ -25,7 +25,11 @@ import urllib.parse
 import urllib.request
 from typing import Dict, List, Optional
 
-from qisheng import (
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from engine.board import (
     Board, Move, WHITE, BLACK,
     start_board, make_move, legal_moves,
 )
@@ -89,7 +93,8 @@ _query_cache: Dict[str, Optional[List[Dict]]] = {}
 MAX_CACHE_ENTRIES = 50000
 
 
-def query_chessdb_queryall(fen: str, delay: float = 0.0, timeout: float = 10.0) -> Optional[List[Dict]]:
+def query_chessdb_queryall(fen: str, delay: float = 0.0, timeout: float = 10.0,
+                           raise_on_network_error: bool = False) -> Optional[List[Dict]]:
     if fen in _query_cache:
         return _query_cache[fen]  # khong ton request, khong can nghi
     url = f"{CHESSDB_URL}?action=queryall&board={urllib.parse.quote(fen)}&showall=1"
@@ -98,6 +103,10 @@ def query_chessdb_queryall(fen: str, delay: float = 0.0, timeout: float = 10.0) 
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             text = resp.read().decode("utf-8", errors="replace").strip()
     except OSError as exc:
+        # Loi mang KHAC voi "chessdb khong biet the co nay": ben goi can phan biet
+        # de con thu lai, khong vut bo the co (vd. may ngu/mat wifi giua chung).
+        if raise_on_network_error:
+            raise
         print(f"  [canh bao] loi mang khi hoi chessdb: {exc}")
         return None
     finally:
@@ -200,7 +209,7 @@ def main() -> None:
     parser.add_argument("--max-plies", type=int, default=40, help="So nuoc toi da moi walk")
     parser.add_argument("--top-k", type=int, default=5, help="Chon ngau nhien trong top-k nuoc goi y")
     parser.add_argument("--delay", type=float, default=0.3, help="Giay nghi giua 2 request (lich su voi dich vu cong dong)")
-    parser.add_argument("--output", type=str, default="data_openings_chessdb.jsonl", help="File JSONL luu du lieu")
+    parser.add_argument("--output", type=str, default="data/data_openings_chessdb.jsonl", help="File JSONL luu du lieu")
     parser.add_argument("--target-total", type=int, default=None,
                          help="Dung som ngay khi tong so the co (ca cu + moi) dat muc nay")
     parser.add_argument("--stall-patience", type=int, default=100,

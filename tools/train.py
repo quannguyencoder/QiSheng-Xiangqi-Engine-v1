@@ -17,7 +17,11 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, random_split
 
-from collect_openings import FEN_TO_INTERNAL
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from tools.collect_openings import FEN_TO_INTERNAL
 
 PIECE_ORDER = "RHEAKCP"  # Xe, Ma, Tuong(elephant), Si, Tuong soai, Phao, Tot
 
@@ -112,14 +116,15 @@ def run_epoch(model, loader, device, optimizer=None) -> float:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Huan luyen mang danh gia the co")
     parser.add_argument("--data", type=str, nargs="+",
-                        default=["data_openings_chessdb.jsonl", "data_midend_engine.jsonl"],
+                        default=["data/data_openings_chessdb.jsonl", "data/training_set.jsonl"]
+                                + sorted(__import__("glob").glob("data/data_crawl_s*.jsonl")),
                         help="Mot hoac nhieu file JSONL du lieu")
     parser.add_argument("--epochs", type=int, default=200, help="So epoch toi da (co early stopping)")
     parser.add_argument("--patience", type=int, default=20, help="Dung neu val loss khong giam sau tung nay epoch")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--val-split", type=float, default=0.1)
-    parser.add_argument("--checkpoint", type=str, default="eval_net.pt")
+    parser.add_argument("--checkpoint", type=str, default="weights/eval_net.pt")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
