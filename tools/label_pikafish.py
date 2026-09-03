@@ -109,6 +109,14 @@ def load_seeds(paths):
     return seeds
 
 
+def phase_of_fen(fen: str) -> str:
+    """Giai doan dua tren so quan con lai tren ban."""
+    n = sum(1 for ch in fen.split()[0] if ch.isalpha())
+    if n >= 28:
+        return "khai_cuoc"
+    return "trung_cuoc" if n >= 16 else "tan_cuoc"
+
+
 def load_seen(path):
     seen = set()
     if os.path.exists(path):
@@ -136,6 +144,9 @@ def main() -> None:
                     help="Xac suat di nuoc ngau nhien (tao da dang)")
     ap.add_argument("--capture-prob", type=float, default=0.10,
                     help="Xac suat ep di nuoc an quan (tao the LECH QUAN)")
+    ap.add_argument("--open-ratio", type=float, default=0.27, help="Ti le khai cuoc mong muon")
+    ap.add_argument("--mid-ratio", type=float, default=0.50, help="Ti le trung cuoc mong muon")
+    ap.add_argument("--end-ratio", type=float, default=0.23, help="Ti le tan cuoc mong muon")
     ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--hash", type=int, default=128)
     ap.add_argument("--seed", type=int, default=None)
@@ -146,7 +157,14 @@ def main() -> None:
     if not seeds:
         print(f"LOI: khong doc duoc the co goc tu {args.seed_data}"); return
     seen = load_seen(args.output)
-    print(f"{len(seeds)} the co goc | da co {len(seen)} mau trong {args.output}", flush=True)
+    phase_count = {"khai_cuoc": 0, "trung_cuoc": 0, "tan_cuoc": 0}
+    for f in seen:
+        phase_count[phase_of_fen(f)] += 1
+    phase_target = {"khai_cuoc": args.open_ratio,
+                    "trung_cuoc": args.mid_ratio,
+                    "tan_cuoc": args.end_ratio}
+    print(f"{len(seeds)} the co goc | da co {len(seen)} mau trong {args.output} "
+          f"| phan bo hien tai {phase_count}", flush=True)
 
     eng = Pikafish(args.binary, args.threads, args.hash)
     stats = {"moi": 0, "van": 0, "ngau_nhien": 0, "an_quan": 0}
@@ -157,6 +175,7 @@ def main() -> None:
             while len(seen) < args.target_total:
                 board, side = fen_to_board(rng.choice(seeds))
                 stats["van"] += 1
+                stats_van_moi = 0
 
                 for _ in range(args.max_plies):
                     fen = board_to_fen(board, side)
@@ -166,8 +185,30 @@ def main() -> None:
                     cp, best_iccs = res
                     cp_white = cp if side == WHITE else -cp
 
-                    if fen not in seen:
+                    ph = phase_of_fen(fen)
+                    tong = sum(phase_count.values())
+                    # Quota noi long (it bo phi lan goi engine hon quota cung):
+                    #   - khai cuoc: luon nhan
+                    #   - trung cuoc: giu quanh --mid-ratio (cho lech +4%)
+                    #   - tan cuoc: khong duoc nhieu hon khai cuoc
+                    # Van co van duoc danh tiep binh thuong du mau bi bo qua.
+                    if tong < 200 or ph == "khai_cuoc":
+                        du_quota = True
+                    elif ph == "trung_cuoc":
+                        du_quota = phase_count[ph] < args.mid_ratio * 1.04 * (tong + 1)
+                    else:
+                        du_quota = phase_count["tan_cuoc"] < phase_count["khai_cuoc"]
+
+                    if not du_quota and stats_van_moi > 3:
+                        # Giai doan nay dang thua quota: bo van nay, bat dau van moi
+                        # tu mot the co khai cuoc khac. Neu cu danh tiep thi moi lan
+                        # goi engine deu bi vut di - do chinh la thu lam cham toan bo.
+                        break
+
+                    if fen not in seen and du_quota:
                         seen.add(fen)
+                        phase_count[ph] += 1
+                        stats_van_moi += 1
                         out.write(json.dumps({
                             "fen": fen, "side": side,
                             "score": cp_to_score(cp_white),
@@ -180,8 +221,11 @@ def main() -> None:
                         if stats["moi"] % 500 == 0:
                             out.flush()
                             dt = max(time.time() - t0, 1e-9)
+                            tot = max(sum(phase_count.values()), 1)
                             print(f"{len(seen)}/{args.target_total} | van {stats['van']} | "
-                                  f"ngau nhien {stats['ngau_nhien']}, an quan {stats['an_quan']} | "
+                                  f"khai {phase_count['khai_cuoc']/tot*100:.0f}% "
+                                  f"trung {phase_count['trung_cuoc']/tot*100:.0f}% "
+                                  f"tan {phase_count['tan_cuoc']/tot*100:.0f}% | "
                                   f"{stats['moi']/dt*60:.0f} mau/phut", flush=True)
                         if len(seen) >= args.target_total:
                             break
