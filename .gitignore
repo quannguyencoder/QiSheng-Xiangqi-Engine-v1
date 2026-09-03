@@ -17,3 +17,9 @@ data/crawl_s*.log
 # Backup trong so cu
 weights/*.bak
 data/pikafish_s*.log
+
+# Du lieu huan luyen: tai tao duoc bang tools/, qua lon cho git
+# (moi file se ~212 MB khi du 8 trieu mau, GitHub chan o 100 MB)
+data/data_pikafish_s*.jsonl
+data/seeds_chessdb.jsonl
+data/training_set.jsonl
