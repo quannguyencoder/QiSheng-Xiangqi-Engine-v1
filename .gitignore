@@ -16,3 +16,4 @@ data/crawl_s*.log
 
 # Backup trong so cu
 weights/*.bak
+data/pikafish_s*.log
