@@ -1,143 +1,159 @@
 # QiSheng (棋聖) — Xiangqi Engine v1
 
-> A Xiangqi (Chinese chess) engine written entirely from scratch in Python — own move
-> generation, own search, own evaluation, **no chess libraries of any kind**. Every position
-> is scored on a **0–1000 scale** from Red/White's perspective.
+A **Xiangqi** (Chinese chess) engine written entirely from scratch in Python — its own move
+generation, its own search, its own evaluation. **No chess library of any kind is used.**
+The neural evaluator is trained on positions labeled by *external* sources; the engine never
+scores its own training data.
 
-Engine cờ tướng viết hoàn toàn từ đầu bằng Python. Tự sinh nước đi, tự tìm kiếm, tự đánh giá
-thế cờ — **không dùng bất kỳ thư viện cờ nào**. Mạng nơ-ron học từ dữ liệu gán nhãn bởi
-nguồn ngoài, không tự chấm điểm cho chính mình.
+## Scoring scale
 
-## Thang điểm
+Every position is scored on a **0–1000 scale from Red/White's perspective**:
 
-Mọi thế cờ được chấm trên thang **0–1000** theo góc nhìn Trắng:
-
-| Điểm | Ý nghĩa |
+| Score | Meaning |
 |---:|---|
-| 1000 | Trắng chiếu hết được **ngay trong nước đi này** |
-| 505 | thế cờ khởi đầu (Trắng đi trước, +5 điểm tempo) |
-| 500 | cân bằng |
-| 0 | ngược lại cho Đen |
+| 1000 | White has a **mate in this very move** |
+| 505 | the starting position (White moves first, +5 tempo) |
+| 500 | balanced |
+| 0 | the same, reversed, for Black |
 
-Điểm chiếu hết giảm dần theo độ sâu (1000 → 999 → 998…) nên engine luôn ưu tiên đường
-chiếu hết **ngắn nhất**.
+Mate scores decay with depth (1000 → 999 → 998…), so the engine always prefers the
+**shortest** mate.
 
-## Tình trạng hiện tại
+## Project status
 
-Dự án đang phát triển. Nói thẳng những gì đã và **chưa** có:
+Under active development. What exists and — just as importantly — what does not:
 
-| Hạng mục | Trạng thái |
+| Component | Status |
 |---|---|
-| Luật đi quân + sinh nước đi | ✅ Đã kiểm chứng bằng perft, khớp giá trị chuẩn |
-| Search (alpha-beta, quiescence, TT, move ordering) | ✅ Hoạt động |
-| Đánh giá thủ công (vật chất + cơ động + PST) | ✅ Hoạt động |
-| Thu thập dữ liệu từ nguồn ngoài | 🔄 Đang chạy (47.872 thế cờ) |
-| Mạng nơ-ron đánh giá | ⚠️ Đã huấn luyện nhưng **chưa nối vào engine** |
-| Đo Elo | ❌ Chưa có — cần dựng đối kháng với Pikafish |
-| Giao diện web | ❌ Chưa làm |
+| Rules + move generation | ✅ Verified by perft against reference values |
+| Search (alpha-beta, quiescence, TT, move ordering) | ✅ Working |
+| Handcrafted evaluation (material + mobility + PST) | ✅ Working |
+| External data collection | 🔄 Running — 50337 positions so far |
+| Neural evaluator | ⚠️ Trained, but **not yet wired into the engine** |
+| Elo measurement | ❌ None — needs a match harness against Pikafish |
+| Web interface | ❌ Not built |
 
-**Chưa công bố con số Elo nào** vì chưa có bộ đối kháng để đo. Mọi phát biểu về sức cờ
-trước khi có số liệu đối kháng đều là phỏng đoán.
+**No Elo figure is claimed anywhere in this repository.** Without a match harness playing real
+games against a reference engine, any strength number would be guesswork.
 
-## Cấu trúc
+## Layout
 
 ```
-engine/            lõi engine — Python thuần, không cần thư viện ngoài
-  board.py           bàn cờ 10×9, sinh nước đi 7 loại quân, luật kỵ mặt tướng
-  evaluate.py        đánh giá tĩnh: vật chất + cơ động + vị trí
-  pst.py             bảng điểm vị trí (piece-square table) cho từng loại quân
+engine/            engine core — pure Python, zero dependencies
+  board.py           10×9 board, move generation for all 7 piece types, flying-general rule
+  evaluate.py        static evaluation: material + mobility + placement
+  pst.py             piece-square tables per piece type
   search.py          alpha-beta + quiescence + transposition table + move ordering
-  scoring.py         quy đổi sang thang 0–1000 (tách riêng để calibrate độc lập)
-tools/             script ngoài luồng chạy — chỉ dùng khi thu thập dữ liệu / huấn luyện
-  crawl_chessdb.py   cào thế cờ có nhãn từ chessdb.cn theo BFS
-  collect_openings.py thu thập khai cuộc bằng self-play walk
-  train.py           huấn luyện mạng đánh giá (PyTorch)
-tests/             kiểm thử: perft, luật đi quân, thang điểm
-data/              dữ liệu huấn luyện (JSONL) + hàng đợi BFS
-weights/           trọng số mạng đã huấn luyện
-web/               giao diện bàn cờ (chưa làm)
-main.py            CLI phân tích thế cờ
+  scoring.py         conversion to the 0–1000 scale (kept separate so it can be recalibrated)
+tools/             offline scripts — used only for data collection and training
+  crawl_chessdb.py   BFS crawler harvesting labeled positions from chessdb.cn
+  collect_openings.py opening collection via self-play walks
+  train.py           trains the evaluation network (PyTorch)
+tests/             perft, movement rules, scoring
+data/              training data (JSONL) + BFS queues
+weights/           trained network weights
+web/               interactive board (not built yet)
+main.py            CLI position analyzer
 ```
 
-Engine (`engine/`) chạy bằng Python thuần. `requirements.txt` (PyTorch, NumPy) **chỉ cần
-cho việc huấn luyện**, không cần khi chạy engine.
+The engine itself runs on **pure Python**. `requirements.txt` (PyTorch, NumPy) is needed
+**only for training**, never at play time.
 
-## Dùng thử
+## Usage
 
 ```bash
-python3 main.py                              # phân tích thế cờ khởi đầu
-python3 main.py "<FEN>" --depth 2            # phân tích một thế cờ bất kỳ
-python3 tests/test_engine.py                 # chạy toàn bộ kiểm thử
-python3 tools/train.py --epochs 60           # huấn luyện lại mạng đánh giá
+python3 main.py                              # analyze the starting position
+python3 main.py "<FEN>" --depth 2            # analyze any position
+python3 tests/test_engine.py                 # run the full test suite
+python3 tools/train.py --epochs 60           # retrain the evaluation network
 python3 tools/crawl_chessdb.py --output data/x.jsonl --shard 0 --num-shards 6
 ```
 
-## Kỹ thuật trong search
+## Search techniques
 
-| Kỹ thuật | Tác dụng |
+| Technique | Effect |
 |---|---|
-| Alpha-beta | cắt nhánh không cần xét |
-| Move ordering MVV-LVA | thử nước ăn quân giá trị cao bằng quân rẻ trước → cắt sâu hơn nhiều |
-| Transposition table (băm Zobrist) | cùng thế cờ đến từ nhiều thứ tự nước đi chỉ tính một lần |
-| Quiescence search | không dừng giữa pha đổi quân (chống hiệu ứng chân trời) |
+| Alpha-beta pruning | skips branches that cannot affect the result |
+| MVV-LVA move ordering | tries high-value captures by cheap attackers first, pruning far more |
+| Transposition table (Zobrist) | a position reached by different move orders is computed once |
+| Quiescence search | never stops mid-exchange (defeats the horizon effect) |
 
-**Quiescence giải quyết được lỗi gì:** ở thế cờ khởi đầu, Pháo Trắng có thể nhảy qua Pháo Đen
-ăn Mã. Engine không có quiescence chấm nước này **610 điểm** (tưởng thắng lớn) vì không nhìn
-thấy Đen ăn lại ngay. Có quiescence, nước đó chấm **481 điểm** — đúng bản chất.
+**What quiescence actually fixed:** from the starting position, White's cannon can jump over
+Black's cannon to capture a horse. Without quiescence the engine scored that move **610**
+(thinking it had won material) because it could not see the immediate recapture. With
+quiescence the same move scores **481** — its true value.
 
-## Dữ liệu
+## Data
 
-Nhãn lấy từ **nguồn ngoài**, engine không tự chấm điểm cho dữ liệu huấn luyện của chính nó:
+All labels come from **external sources**. The engine does not grade its own training data.
 
-| Nguồn | Số thế cờ | Ghi chú |
+| Source | Positions | Notes |
 |---|---:|---|
-| chessdb.cn | 10.481 | winrate từ ván người thật + engine mạnh, đang tăng |
-| engine nội bộ (đã đóng băng) | 37.391 | dữ liệu cũ, giữ lại vì dạy đúng về vật chất |
-| **Tổng** | **47.872** | |
+| chessdb.cn | 12924 | win rates from real games + strong engine analysis; growing |
+| internal engine (frozen) | 37,391 | legacy set, kept because it teaches material correctly |
+| **Total** | **50337** | |
 
-`crawl_chessdb.py` duyệt **BFS trên chính cây thế cờ chessdb đã phân tích**: mỗi lần hỏi một
-thế cờ, chessdb trả về mọi nước đi nó biết → mỗi nước sinh một thế cờ con chắc chắn vẫn nằm
-trong vùng đã phân tích. Nhờ vậy gần như mọi request đều thu được một mẫu có nhãn, thay vì đi
-ngẫu nhiên rồi trượt ra ngoài vùng dữ liệu.
+`crawl_chessdb.py` runs a **breadth-first search over the analyzed part of chessdb's own
+position tree**: each query returns every move chessdb knows for that position, and each of
+those moves leads to a child position that is also inside the analyzed region. Nearly every
+request therefore yields a labeled sample, instead of wandering out of the covered region as
+random walks do.
 
-**Vì sao vẫn giữ 37.391 mẫu nhãn engine:** đã đo bằng thực nghiệm. Mạng chỉ học dữ liệu
-chessdb đạt MAE tốt hơn trên khai cuộc (36,1 vs 53,1) nhưng **hiểu ngược hoàn toàn về vật
-chất** — xoá một quân Xe của Đen mà nó tưởng Đen *lợi* hơn, sai 81% số lần. Dữ liệu chessdb
-hiện có toàn thế cờ cân bằng nên mạng không bao giờ thấy thế lệch quân.
+**Why the internal-engine set is kept.** Measured, not assumed. A network trained on chessdb
+data alone gets a better MAE on openings (36.1 vs 53.1) but understands material **backwards**:
+remove one of Black's chariots and it thinks Black *improved* — wrong 81% of the time. The
+chessdb data available so far consists almost entirely of balanced openings, so the network
+never sees material imbalance.
 
-## Kiểm thử
+## Target dataset size
+
+The network has **797,313 parameters**. At the common heuristic of ~10 samples per parameter,
+the useful ceiling for this architecture is about **8 million positions** — which is the current
+collection target. Beyond that, a fixed-capacity model gains little: it starts averaging over
+examples it lacks the capacity to separate.
+
+One honest caveat: BFS-adjacent positions differ by a single move, so the dataset is highly
+redundant. Eight million BFS positions carry far less information than eight million independent
+ones, and 1–2 million diverse positions may already capture most of the benefit.
+
+At the measured crawl rate of **15,588 positions/hour** (374,112/day), 8 million positions
+require **~21 days** of continuous crawling. A local Pikafish labeler would cut this by an
+order of magnitude and, unlike chessdb, could grade material-imbalanced positions too.
+
+## Tests
 
 ```
 perft(1) =     44   ✓
-perft(2) =  1.920   ✓
-perft(3) = 79.666   ✓
+perft(2) =  1,920   ✓
+perft(3) = 79,666   ✓
 ```
 
-Perft (đếm số thế cờ lá ở độ sâu N) khớp tuyệt đối giá trị chuẩn của cờ tướng — chỉ cần một
-lỗi nhỏ trong luật đi quân là con số lệch ngay. Ngoài ra có kiểm thử cho luật ngòi Pháo, cản
-chân Mã, Tượng không qua sông, Tốt đi ngang sau khi qua sông, và luật kỵ mặt tướng.
+Perft counts leaf positions at depth N and matches the reference values for Xiangqi exactly —
+a single flaw in the movement rules would change these numbers immediately. The suite also
+covers the cannon's screen requirement, the horse's blocked leg, the elephant's inability to
+cross the river, the soldier's sideways move after crossing, and the flying-general rule.
 
-## Hiệu năng
+## Performance
 
-| Độ sâu | Thời gian |
+| Depth | Time |
 |---:|---|
-| 1 | 0,2 s |
-| 2 | 2,1 s |
-| 3 | 13,6 s |
+| 1 | 0.2 s |
+| 2 | 2.1 s |
+| 3 | 13.6 s |
 
-Nút thắt hiện nằm ở `is_square_attacked()`: mỗi lần kiểm tra chiếu tướng phải quét cả 90 ô
-rồi sinh toàn bộ nước đi của quân địch. Thay bằng dò tia từ ô Tướng sẽ nhanh hơn nhiều lần
-mà không đổi kết quả — đây là việc tối ưu đáng làm nhất tiếp theo.
+The bottleneck is `is_square_attacked()`: every check test scans all 90 squares and generates
+every enemy move. Replacing it with ray casting from the general's square would be several times
+faster without changing any result — the highest-value optimization left.
 
-## Hướng đi tiếp
+## Roadmap
 
-- [ ] Tối ưu `is_square_attacked()` — tăng độ sâu tìm kiếm
-- [ ] Nối mạng nơ-ron vào hàm đánh giá của engine (hiện đã huấn luyện nhưng chưa dùng)
-- [ ] Thêm Pikafish làm nguồn nhãn thứ hai (chấm được cả thế lệch quân, không như chessdb)
-- [ ] Dựng bộ đối kháng để **đo Elo thật**
-- [ ] Giao diện web: bàn cờ tương tác, thanh đánh giá, mũi tên nước đi tốt nhất
+- [ ] Optimize `is_square_attacked()` to reach deeper searches
+- [ ] Wire the neural evaluator into the engine (trained, but currently unused)
+- [ ] Add Pikafish as a second label source (it can grade imbalanced positions; chessdb cannot)
+- [ ] Build a match harness to **measure real Elo**
+- [ ] Web interface: interactive board, evaluation bar, best-move arrows
 
-## Giấy phép
+## License
 
-Chưa chọn. Dữ liệu trong `data/` lấy từ chessdb.cn — xem điều khoản của họ trước khi
-dùng lại vào mục đích khác.
+Not chosen yet. Data under `data/` originates from chessdb.cn — check their terms before
+reusing it for other purposes.
