@@ -26,10 +26,13 @@ Du lieu dung chung voi tools/train_big.py - cung file, cung cach nen bit.
 
 import argparse
 import glob
+import json
 import os
 import random
 import sys
 import time
+
+import math
 
 import numpy as np
 import torch
@@ -70,6 +73,46 @@ def giai_nen(batch: np.ndarray) -> np.ndarray:
     return np.concatenate([bits[:, :SO_DAC_TRUNG], bits[:, 1260:1261]], axis=1)
 
 
+def doc_rows_tanh(paths, limit, rng, scale):
+    """Doc du lieu va TINH LAI nhan theo thang tanh giong engine.
+
+    Nhan goc trong file duoc tao bang sigmoid(cp/200), thang do bao hoa rat
+    som: hon 1 Xe cham 989 diem, hon 2 Xe cham 999,9 - cach nhau 10,9 diem
+    trong khi sai so cua mang la 100 diem. Mang khong the phan biet noi, nen
+    trong search no cham moi the co lech quan deu ~1000 va het co so chon nuoc.
+
+    Thang tanh(cp/1600) - dung thang engine/scoring.py dang dung - giu khoang
+    cach 149 diem giua hon 1 Xe va hon 2 Xe. Do la thang co the hoc duoc.
+    """
+    rows = []
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                    cp = d.get("cp")
+                    if cp is None:          # du lieu chessdb khong co cp
+                        rows.append((d["fen"], d["score"]))
+                    else:
+                        v = math.tanh(cp / scale) * 495.0
+                        rows.append((d["fen"], max(1, min(999, round(500 + v)))))
+                except (json.JSONDecodeError, KeyError):
+                    continue
+        print(f"  {path}: tong {len(rows):,} mau", flush=True)
+    seen, uniq = set(), []
+    for fen, sc in rows:
+        if fen not in seen:
+            seen.add(fen)
+            uniq.append((fen, sc))
+    rng.shuffle(uniq)
+    return uniq[:limit]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Huan luyen mang kieu NNUE")
     ap.add_argument("--data", nargs="+", default=None)
@@ -83,6 +126,9 @@ def main() -> None:
     ap.add_argument("--hidden", type=int, default=SO_AN)
     ap.add_argument("--checkpoint", default="weights/nnue_net.pt")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--thang-tanh", type=float, default=None,
+                    help="Tinh lai nhan bang tanh(cp/SCALE) thay vi dung nhan\n"
+                         "sigmoid(cp/200) co san. Dung 1600 de khop engine.")
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
@@ -92,7 +138,11 @@ def main() -> None:
                           + sorted(glob.glob("data/data_crawl_s*.jsonl"))
                           + ["data/data_openings_chessdb.jsonl", "data/training_set.jsonl"])
     print("Doc du lieu...", flush=True)
-    rows = load_rows(paths, args.limit, rng)
+    if args.thang_tanh:
+        print(f"Tinh lai nhan theo thang tanh(cp/{args.thang_tanh:.0f})", flush=True)
+        rows = doc_rows_tanh(paths, args.limit, rng, args.thang_tanh)
+    else:
+        rows = load_rows(paths, args.limit, rng)
     n = len(rows)
     print(f"Dung {n:,} mau doc nhat", flush=True)
 

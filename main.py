@@ -33,16 +33,37 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Phan tich the co tuong")
     p.add_argument("fen", nargs="?", help="FEN cua the co (bo trong = the co khoi dau)")
     p.add_argument("--depth", type=int, default=1, help="Do sau tim kiem")
+    p.add_argument("--tron", nargs="?", type=float, const=0.5, default=None,
+                   help="Tron ham thu cong voi mang NNUE (mac dinh 0.5 = 50/50). "
+                        "Day la cau hinh MANH NHAT do duoc.")
+    p.add_argument("--mang", default="weights/nnue_tanh.npz",
+                   help="Duong dan mang NNUE dung cho --tron / --mang-thuan")
+    p.add_argument("--mang-thuan", action="store_true",
+                   help="Dung mang NNUE mot minh, khong tron")
     p.add_argument("--nnue", nargs="?", const="weights/eval_net.npz", default=None,
                    help="Danh gia bang mang no-ron thay vi ham thu cong "
                         "(mac dinh weights/eval_net.npz)")
     args = p.parse_args()
 
-    if args.nnue:
+    from engine.search import set_evaluator
+    if args.tron is not None:
+        # Cau hinh MANH NHAT do duoc: tron ham thu cong voi mang NNUE.
+        # Do doi khang 48 van cho thay tron 50/50 manh hon ham thu cong thuan
+        # +104 Elo (khoang tin cay 95%: +7 den +221), va manh hon ca mang thuan.
+        from engine.evaluate import evaluate as thu_cong
+        from engine.ket_hop import tao_ham_tron
+        from engine.nnue_net import MangNnue
+        set_evaluator(tao_ham_tron(thu_cong, MangNnue(args.mang).evaluate, args.tron))
+        print(f"Danh gia: tron {int((1-args.tron)*100)}% thu cong "
+              f"+ {int(args.tron*100)}% mang ({args.mang})")
+    elif args.mang_thuan:
+        from engine.nnue_net import MangNnue
+        set_evaluator(MangNnue(args.mang).evaluate)
+        print(f"Danh gia: mang NNUE thuan ({args.mang})")
+    elif args.nnue:
         from engine.nnue import NnueEvaluator
-        from engine.search import set_evaluator
         set_evaluator(NnueEvaluator(args.nnue).evaluate)
-        print(f"Danh gia: mang no-ron ({args.nnue})")
+        print(f"Danh gia: mang CNN ({args.nnue})")
     else:
         print("Danh gia: ham thu cong (vat chat + co dong + vi tri)")
 

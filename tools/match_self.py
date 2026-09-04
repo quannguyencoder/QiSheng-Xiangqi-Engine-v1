@@ -37,6 +37,16 @@ def tao_ham_danh_gia(spec: str):
     if kieu == "nnue":
         from engine.nnue_net import MangNnue
         return MangNnue(path).evaluate, f"mang NNUE ({os.path.basename(path)})"
+    if kieu == "tron":
+        # tron:<duong dan mang>:<trong so>   vi du tron:weights/x.npz:0.5
+        duong, _, w = path.rpartition(":")
+        from engine.evaluate import evaluate as tc
+        from engine.ket_hop import tao_ham_tron
+        from engine.nnue_net import MangNnue
+        tso = float(w)
+        return (tao_ham_tron(tc, MangNnue(duong).evaluate, tso),
+                f"tron {int((1-tso)*100)}% thu cong + {int(tso*100)}% mang "
+                f"({os.path.basename(duong)})")
     if kieu == "cnn":
         from engine.nnue import NnueEvaluator
         return NnueEvaluator(path).evaluate, f"mang CNN ({os.path.basename(path)})"
