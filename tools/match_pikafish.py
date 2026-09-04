@@ -13,18 +13,21 @@ tim sau), nen day la thuoc do "con bao xa" chu chua phai thang do Elo tuyet doi.
 """
 
 import argparse
+import json
 import math
 import os
+import random
 import subprocess
 import sys
 import threading
 import time
+from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
 from engine.search import evaluate_current_position
-from tools.collect_openings import board_to_fen, iccs_to_move
+from tools.collect_openings import board_to_fen, fen_to_board, iccs_to_move
 from tools.label_pikafish import EngineTreo
 
 
@@ -110,9 +113,46 @@ class Pikafish:
             self.p.kill()
 
 
-def play_game(eng: Pikafish, qisheng_is_white: bool, depth: int, max_plies: int):
+def doc_khai_cuoc(path: str, so_van: int, seed: int):
+    """Lay cac the co khai cuoc THAT tu chessdb de moi van bat dau mot kieu khac.
+
+    Vi sao bat buoc phai co: ca QiSheng lan Pikafish deu danh TAT DINH. Neu moi
+    van deu bat dau tu the co khoi dau thi van 1 va van 3 (cung mau quan) se
+    giong het nhau tung nuoc. Danh 20 van ma that ra chi co 2 van khac nhau,
+    va ti le diem tinh ra khong co y nghia thong ke nao.
+
+    Moi the co khai cuoc duoc danh HAI lan - mot lan QiSheng cam Trang, mot lan
+    cam Den - de triet tieu loi the/bat loi cua rieng the co do.
+    """
+    fens = []
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    fens.append(json.loads(line)["fen"])
+                except (json.JSONDecodeError, KeyError):
+                    continue
+    if not fens:
+        return [None] * so_van          # khong co du lieu -> the co khoi dau
+    random.Random(seed).shuffle(fens)
+    can = (so_van + 1) // 2
+    chon = (fens * (can // len(fens) + 1))[:can]
+    ra = []
+    for f in chon:
+        ra.extend([f, f])               # moi khai cuoc danh ca hai mau quan
+    return ra[:so_van]
+
+
+def play_game(eng: Pikafish, qisheng_is_white: bool, depth: int, max_plies: int,
+              fen_dau: Optional[str] = None):
     """Tra ve 1.0 neu QiSheng thang, 0.5 hoa, 0.0 thua."""
-    board, side = start_board(), WHITE
+    if fen_dau:
+        board, side = fen_to_board(fen_dau)
+    else:
+        board, side = start_board(), WHITE
     for _ in range(max_plies):
         moves = legal_moves(board, side)
         if not moves:
@@ -155,6 +195,9 @@ def main() -> None:
     ap.add_argument("--pikafish-nodes", type=int, default=0,
                     help="Ha suc Pikafish bang gioi han so nut tim kiem (0 = khong gioi han)")
     ap.add_argument("--max-plies", type=int, default=120)
+    ap.add_argument("--khai-cuoc", default="data/data_openings_chessdb.jsonl",
+                    help="Kho the co khai cuoc de moi van bat dau mot kieu khac")
+    ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--nnue", default=None, help="Dung mang CNN (.npz) thay danh gia thu cong")
     ap.add_argument("--nnue-net", default=None, help="Dung mang NNUE (.npz) thay danh gia thu cong")
     args = ap.parse_args()
@@ -171,13 +214,19 @@ def main() -> None:
     else:
         print("Danh gia: ham thu cong")
 
+    khai_cuoc = doc_khai_cuoc(args.khai_cuoc, args.games, args.seed)
+    so_rieng = len({f for f in khai_cuoc if f})
+    print(f"{args.games} van tu {so_rieng} the co khai cuoc khac nhau "
+          f"(moi the danh ca hai mau quan)")
+
     eng = Pikafish(args.binary, args.pikafish_depth, nodes=args.pikafish_nodes)
     score, results = 0.0, []
     t0 = time.time()
     try:
         for g in range(args.games):
             qs_white = (g % 2 == 0)       # doi ben moi van cho cong bang
-            r = play_game(eng, qs_white, args.qisheng_depth, args.max_plies)
+            r = play_game(eng, qs_white, args.qisheng_depth, args.max_plies,
+                          khai_cuoc[g])
             score += r
             results.append(r)
             ten = {1.0: "THANG", 0.5: "hoa", 0.0: "thua"}[r]
