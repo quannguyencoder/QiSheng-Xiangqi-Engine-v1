@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
 from engine import search as search_mod
+from engine.evaluate import material_score
 from tools.collect_openings import fen_to_board
 
 
@@ -64,6 +65,25 @@ def doc_khai_cuoc(path: str, so_van: int, seed: int):
     return ra[:so_van]
 
 
+NGUONG_XU = 400          # hon nhau tu mot con Ma tro len thi xu thang
+
+
+def xu_the_co(board, a_cam_trang: bool) -> float:
+    """Het so nuoc cho phep -> xu theo VAT CHAT thay vi tuyen bo hoa het.
+
+    Neu khong co buoc nay, gan nhu moi van deu cham tran so nuoc va bi tinh la
+    hoa, khien ti le diem luon ~50% du mot ben manh hon han - phep do tro nen
+    vo nghia. Cac giai engine deu xu theo vat chat o tinh huong nay.
+    """
+    chenh = material_score(board)           # duong = Trang loi
+    chenh_cua_a = chenh if a_cam_trang else -chenh
+    if chenh_cua_a >= NGUONG_XU:
+        return 1.0
+    if chenh_cua_a <= -NGUONG_XU:
+        return 0.0
+    return 0.5
+
+
 def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
                  max_plies: int, fen_dau):
     """Tra ve 1.0 neu A thang, 0.5 hoa, 0.0 thua."""
@@ -79,7 +99,7 @@ def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
             return 0.0 if a_den_luot else 1.0
         board = make_move(board, mv)
         side = BLACK if side == WHITE else WHITE
-    return 0.5
+    return xu_the_co(board, a_cam_trang)
 
 
 def main() -> None:
