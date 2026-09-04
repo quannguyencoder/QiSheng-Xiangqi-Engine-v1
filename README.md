@@ -11,7 +11,7 @@ No chess library. No borrowed engine. Every rule, every search, every evaluation
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![Runtime](https://img.shields.io/badge/runtime-zero%20dependencies-success)
 ![Perft](https://img.shields.io/badge/perft-verified%20✓-success)
-![Positions](https://img.shields.io/badge/training%20positions-2.1M-blue)
+![Positions](https://img.shields.io/badge/training%20positions-16M-blue)
 ![Scale](https://img.shields.io/badge/scoring-0--1000-orange)
 
 </div>
@@ -77,7 +77,7 @@ flowchart TD
     R(("QiSheng<br/>strengths"))
     R --- A["🎯 <b>Provably correct rules</b><br/>perft 44 / 1,920 / 79,666 — exact match"]
     R --- B["🔍 <b>No horizon blindness</b><br/>a trap scoring 610 without quiescence<br/>is correctly seen as 481"]
-    R --- C["📚 <b>Trained on 2.1M positions</b><br/>labeled by an external engine,<br/>never by itself"]
+    R --- C["📚 <b>Trained on 16M positions</b><br/>labeled by Pikafish at depth 10,<br/>never by itself"]
     R --- D["⚖️ <b>Two independent teachers</b><br/>engine evaluation + real-game win rates<br/>agree to within 21 points"]
     R --- E["🪶 <b>Runs anywhere</b><br/>stock Python — no install, no GPU"]
     style R fill:#c62828,stroke:#7f0000,color:#fff
@@ -100,25 +100,42 @@ pie showData
 flowchart LR
     subgraph NOW["Known weaknesses"]
         direction TB
-        W1["🔌 Neural evaluator trained<br/>but not yet plugged into the engine"]
-        W2["📏 No Elo number — no match<br/>harness exists, so none is claimed"]
-        W3["🐌 Depth 3 takes 13.6 s<br/>check detection rescans the whole board"]
+        W1["🎯 The network alone plays WORSE<br/>than the handcrafted evaluator"]
+        W2["🐌 Depth 4 takes 16 s —<br/>depth 7 would take an hour"]
+        W3["🔍 Search lacks null-move,<br/>LMR, killers, history"]
     end
-    W1 --> F1["Wire it into the evaluation layer"]
-    W2 --> F2["Build a match harness"]
-    W3 --> F3["Ray casting from the general"]
+    W1 --> F1["Blend both: +104 Elo, measured"]
+    W2 --> F2["Make/unmake + incremental accumulator"]
+    W3 --> F3["Add them — they change the exponent"]
     style NOW fill:#fff8e1,stroke:#f9a825
 ```
 
-No strength claim appears anywhere in this repository. Until games are actually played against a
-reference engine, any Elo figure would be a guess — so there isn't one.
+### What the measurements actually say
+
+Every number below comes from games played, not from estimation.
+
+| Evaluator | Head-to-head vs handcrafted | Verdict |
+|---|---|---|
+| Handcrafted (material + mobility + PST) | — | baseline |
+| NNUE alone | −7 Elo at depth 1, −66 at depth 2 | **loses** |
+| **Blend, 50/50** | **+104 Elo** (95% CI: +7 … +221) | **strongest** |
+
+The network predicts Pikafish's evaluation more accurately and runs 2.6× faster than the
+handcrafted function — and still plays worse on its own. What matters when picking a move is
+ranking sibling positions correctly, not absolute accuracy. The handcrafted function errs
+systematically, so its ordering survives; the network errs randomly, and at shallow depth that
+noise exceeds the real difference between candidate moves. Averaging the two cancels part of the
+noise while keeping the positional knowledge.
+
+48 games per data point, each opening played from both sides. Confidence intervals are reported
+because at this sample size a single number would overstate what is known.
 
 ## What's Coming
 
 ```mermaid
 flowchart LR
-    A["✅ Rules<br/>+ perft"] --> B["✅ Search<br/>upgrades"] --> C["✅ 2.1M<br/>positions"]
-    C --> D["◻ Neural<br/>evaluation"] --> E["◻ Faster<br/>search"] --> F["◻ Measured<br/>Elo"] --> G["◻ Web<br/>board"]
+    A["✅ Rules<br/>+ perft"] --> B["✅ Search<br/>upgrades"] --> C["✅ 16M<br/>positions"]
+    C --> D["✅ Neural<br/>evaluation"] --> E["✅ Measured<br/>Elo"] --> F["◻ Depth 7<br/>search"] --> G["◻ Web<br/>board"]
     style A fill:#c8e6c9,stroke:#2e7d32
     style B fill:#c8e6c9,stroke:#2e7d32
     style C fill:#c8e6c9,stroke:#2e7d32
