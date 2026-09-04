@@ -73,17 +73,64 @@ def board_hash(board: Board, side_to_move: str) -> int:
 # Sap xep nuoc di (MVV-LVA)
 # --------------------------------------------------------------------------
 
-def order_moves(board: Board, moves: List[Move], tt_move: Optional[Move] = None) -> List[Move]:
-    """Nuoc tu transposition table truoc, roi den cac nuoc an quan theo MVV-LVA
-    (Most Valuable Victim - Least Valuable Attacker), cuoi cung la nuoc thuong."""
+# --- Killer moves va history heuristic ---------------------------------
+# Hai ky thuat sap xep nuoc di, khong doi ket qua, chi doi THU TU thu.
+#
+# Killer: nuoc di THUONG (khong an quan) tung gay cat tia o cung do sau ply
+# thuong lai gay cat tia lan nua o nhanh anh em. Giu 2 nuoc moi tang.
+#
+# History: dem xem tung cap (o di, o den) da gay cat tia bao nhieu lan trong
+# ca lan tim kiem. Nuoc nao hay cat tia thi thu truoc.
+#
+# Ca hai deu chi anh huong thu tu, nen diem tra ve PHAI giong het truoc khi
+# them - day cung la cach kiem chung.
+
+_MAX_PLY = 64
+_killers: List[List[Optional[Move]]] = [[None, None] for _ in range(_MAX_PLY)]
+_history: Dict[Tuple[int, int, int, int], int] = {}
+
+
+def reset_heuristics() -> None:
+    """Xoa killer va history. Goi o dau moi lan tim kiem tu goc."""
+    global _killers, _history
+    _killers = [[None, None] for _ in range(_MAX_PLY)]
+    _history = {}
+
+
+def _ghi_cat_tia(mv: Move, board: Board, ply: int, depth: int) -> None:
+    """Mot nuoc THUONG vua gay cat tia -> ghi lai de lan sau thu no som hon."""
+    if board[mv[2]][mv[3]] != ".":
+        return                      # nuoc an quan da duoc MVV-LVA lo, khong can
+    if ply < _MAX_PLY:
+        k = _killers[ply]
+        if k[0] != mv:
+            k[1] = k[0]
+            k[0] = mv
+    # Cong theo depth^2: cat tia o do sau lon dang tin hon nhieu
+    _history[mv] = _history.get(mv, 0) + depth * depth
+
+
+def order_moves(board: Board, moves: List[Move], tt_move: Optional[Move] = None,
+                ply: int = 0) -> List[Move]:
+    """Thu tu thu: nuoc tu transposition table, roi nuoc an quan theo MVV-LVA
+    (Most Valuable Victim - Least Valuable Attacker), roi killer, roi cac nuoc
+    thuong xep theo history, cuoi cung la phan con lai."""
+    k0 = k1 = None
+    if ply < _MAX_PLY:
+        k0, k1 = _killers[ply]
+
     def key(mv: Move) -> int:
         if tt_move is not None and mv == tt_move:
             return -10 ** 9
         victim = board[mv[2]][mv[3]]
-        if victim == ".":
-            return 0
-        attacker = board[mv[0]][mv[1]]
-        return -(PIECE_VALUES[victim.upper()] * 10 - PIECE_VALUES[attacker.upper()])
+        if victim != ".":
+            attacker = board[mv[0]][mv[1]]
+            return -(PIECE_VALUES[victim.upper()] * 10 - PIECE_VALUES[attacker.upper()])
+        if mv == k0:
+            return -500
+        if mv == k1:
+            return -499
+        return -_history.get(mv, 0) // 1000 if _history else 0
     return sorted(moves, key=key)
 
 
@@ -184,21 +231,23 @@ def search(board: Board, side_to_move: str, depth: int,
     best_move = None
     if side_to_move == WHITE:
         best_score = -math.inf
-        for mv in order_moves(board, moves, tt_move):
+        for mv in order_moves(board, moves, tt_move, ply):
             sc, _ = search(make_move(board, mv), BLACK, depth - 1, alpha, beta, tt, ply + 1)
             if sc > best_score:
                 best_score, best_move = sc, mv
             alpha = max(alpha, best_score)
             if alpha >= beta:
+                _ghi_cat_tia(mv, board, ply, depth)
                 break
     else:
         best_score = math.inf
-        for mv in order_moves(board, moves, tt_move):
+        for mv in order_moves(board, moves, tt_move, ply):
             sc, _ = search(make_move(board, mv), WHITE, depth - 1, alpha, beta, tt, ply + 1)
             if sc < best_score:
                 best_score, best_move = sc, mv
             beta = min(beta, best_score)
             if alpha >= beta:
+                _ghi_cat_tia(mv, board, ply, depth)
                 break
 
     # Diem chieu het phu thuoc do sau tuong doi nen khong an toan de tai su dung
@@ -220,5 +269,6 @@ def evaluate_current_position(board: Board, side_to_move: str,
                               depth: int = 1) -> Tuple[int, Optional[Move]]:
     """Ham chinh: tra ve (diem cua Trang tren thang 0..1000, nuoc di tot nhat).
     depth=1 du de phat hien 'chieu het ngay trong nuoc nay' -> 1000."""
+    reset_heuristics()
     score, move = search(board, side_to_move, depth, tt={})
     return round(score), move
