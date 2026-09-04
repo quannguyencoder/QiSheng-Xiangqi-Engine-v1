@@ -24,6 +24,7 @@ import os
 import random
 import subprocess
 import sys
+import threading
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,28 +43,75 @@ def cp_to_score(cp: int) -> int:
     return max(0, min(1000, round(1000 / (1 + math.exp(-cp / CP_SCALE)))))
 
 
+class EngineTreo(Exception):
+    """Pikafish khong tra loi trong thoi gian cho -> coi nhu da chet."""
+
+
 class Pikafish:
-    def __init__(self, binary: str, threads: int = 1, hash_mb: int = 128):
+    def __init__(self, binary: str, threads: int = 1, hash_mb: int = 128,
+                 timeout: float = 60.0):
+        self.binary, self.threads, self.hash_mb = binary, threads, hash_mb
+        self.timeout = timeout
+        self._start()
+
+    def _start(self) -> None:
         self.p = subprocess.Popen(
-            [binary], cwd=os.path.dirname(binary),
+            [self.binary], cwd=os.path.dirname(self.binary),
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
         self._send("uci"); self._wait("uciok")
-        self._send(f"setoption name Threads value {threads}")
-        self._send(f"setoption name Hash value {hash_mb}")
+        self._send(f"setoption name Threads value {self.threads}")
+        self._send(f"setoption name Hash value {self.hash_mb}")
         self._send("isready"); self._wait("readyok")
 
+    def restart(self) -> None:
+        try:
+            self.p.kill(); self.p.wait(timeout=5)
+        except Exception:
+            pass
+        self._start()
+
     def _send(self, cmd: str) -> None:
-        self.p.stdin.write(cmd + "\n"); self.p.stdin.flush()
+        try:
+            self.p.stdin.write(cmd + "\n"); self.p.stdin.flush()
+        except (BrokenPipeError, ValueError, OSError) as e:
+            raise EngineTreo(f"khong gui duoc lenh: {e}")
 
     def _wait(self, token: str):
+        """Doc toi khi gap token, CO GIOI HAN THOI GIAN.
+
+        readline() tren pipe se cho vinh vien neu tien trinh con ket (vi du sau
+        khi may ngu day). Truoc day khong co dong ho canh nay, va 3 tien trinh
+        da dung yen 17 tieng o dung dong readline() ben duoi. Nay dat mot
+        threading.Timer: het gio thi giet tien trinh con, readline() lap tuc
+        tra ve EOF thay vi treo, va ta bao loi len tren de khoi dong lai engine.
+        """
         out = []
-        while True:
-            line = self.p.stdout.readline()
-            if not line:
-                break
-            out.append(line.strip())
-            if line.startswith(token):
-                break
+        het_gio = []
+        def _giet():
+            het_gio.append(True)
+            try:
+                self.p.kill()
+            except Exception:
+                pass
+        wd = threading.Timer(self.timeout, _giet)
+        wd.daemon = True
+        wd.start()
+        try:
+            while True:
+                line = self.p.stdout.readline()
+                if not line:
+                    break
+                out.append(line.strip())
+                if line.startswith(token):
+                    break
+        except (ValueError, OSError) as e:
+            raise EngineTreo(f"loi doc ket qua: {e}")
+        finally:
+            wd.cancel()
+        if het_gio:
+            raise EngineTreo(f"Pikafish khong tra loi trong {self.timeout:.0f}s")
+        if not out and self.p.poll() is not None:
+            raise EngineTreo(f"Pikafish thoat bat ngo (ma {self.p.poll()})")
         return out
 
     def analyse(self, fen: str, depth: int):
@@ -150,6 +198,9 @@ def main() -> None:
     ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--hash", type=int, default=128)
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--engine-timeout", type=float, default=60.0,
+                    help="So giay cho Pikafish tra loi truoc khi coi la treo "
+                         "va khoi dong lai no")
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
@@ -166,8 +217,8 @@ def main() -> None:
     print(f"{len(seeds)} the co goc | da co {len(seen)} mau trong {args.output} "
           f"| phan bo hien tai {phase_count}", flush=True)
 
-    eng = Pikafish(args.binary, args.threads, args.hash)
-    stats = {"moi": 0, "van": 0, "ngau_nhien": 0, "an_quan": 0}
+    eng = Pikafish(args.binary, args.threads, args.hash, args.engine_timeout)
+    stats = {"moi": 0, "van": 0, "ngau_nhien": 0, "an_quan": 0, "treo": 0}
     t0 = time.time()
 
     try:
@@ -179,7 +230,21 @@ def main() -> None:
 
                 for _ in range(args.max_plies):
                     fen = board_to_fen(board, side)
-                    res = eng.analyse(fen, args.depth)
+                    try:
+                        res = eng.analyse(fen, args.depth)
+                    except EngineTreo as e:
+                        # Khong dung ca tien trinh vi mot lan engine ket: ghi lai,
+                        # dung engine moi, bo van dang danh va choi van khac.
+                        stats["treo"] += 1
+                        print(f"[canh bao] {e} -> khoi dong lai Pikafish "
+                              f"(lan thu {stats['treo']})", flush=True)
+                        out.flush()
+                        try:
+                            eng.restart()
+                        except Exception as e2:
+                            print(f"[loi] khong khoi dong lai duoc: {e2}", flush=True)
+                            raise
+                        break
                     if res is None:
                         break                      # het nuoc di (chieu het)
                     cp, best_iccs = res
@@ -256,7 +321,8 @@ def main() -> None:
 
     dt = max(time.time() - t0, 1e-9)
     print(f"Xong. {stats['moi']} mau moi trong {dt/60:.1f} phut "
-          f"({stats['moi']/dt*3600:,.0f} mau/gio). Tong: {len(seen)}", flush=True)
+          f"({stats['moi']/dt*3600:,.0f} mau/gio). Tong: {len(seen)} "
+          f"| so lan engine treo phai khoi dong lai: {stats['treo']}", flush=True)
 
 
 if __name__ == "__main__":
