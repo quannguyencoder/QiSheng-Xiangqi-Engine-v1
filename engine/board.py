@@ -155,14 +155,20 @@ def generate_pseudo_moves(board: Board, r: int, c: int) -> List[Move]:
 # Chieu tuong / nuoc di hop le
 # ---------------------------------------------------------------------------
 
+# Tuong soai luon o trong cung: chi 9 o can duyet thay vi ca 90 o cua ban co.
+_PALACE_SQUARES = {
+    WHITE: [(r, c) for r in (7, 8, 9) for c in (3, 4, 5)],
+    BLACK: [(r, c) for r in (0, 1, 2) for c in (3, 4, 5)],
+}
+
+
 def find_king(board: Board, side: str) -> Optional[Tuple[int, int]]:
     """Tra ve None neu tuong soai khong con tren ban co (da bi an trong lúc duyet
     nuoc di gia hop le) - de search khong bi crash o cac the co trung gian."""
     target = "K" if side == WHITE else "k"
-    for r in range(10):
-        for c in range(9):
-            if board[r][c] == target:
-                return r, c
+    for r, c in _PALACE_SQUARES[side]:
+        if board[r][c] == target:
+            return r, c
     return None
 
 
@@ -196,44 +202,46 @@ def is_square_attacked(board: Board, r: int, c: int, by_side: str) -> bool:
     if here != "." and here.isupper() == up:
         return False
 
-    def is_theirs(ch: str, kind: str) -> bool:
-        return ch != "." and ch.isupper() == up and ch.upper() == kind
+    # Bang tra: ky tu quan -> co phai quan cua by_side khong (thay cho ham goi
+    # 9,9 trieu lan trong mot lan tim kiem depth 3).
+    mine = "RHEAKCP" if up else "rheakcp"
+    R, H, E, A, K, C, P = mine[0], mine[1], mine[2], mine[3], mine[4], mine[5], mine[6]
 
     # --- Xe va Phao: di theo 4 tia thang ---
     for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
         tr, tc = r + dr, c + dc
-        while in_bounds(tr, tc) and board[tr][tc] == ".":
+        while 0 <= tr < 10 and 0 <= tc < 9 and board[tr][tc] == ".":
             tr += dr
             tc += dc
-        if not in_bounds(tr, tc):
+        if not (0 <= tr < 10 and 0 <= tc < 9):
             continue
         first = board[tr][tc]
         # Xe: toi duoc o trong lan o co quan (an)
-        if is_theirs(first, "R"):
+        if first == R:
             return True
         # Tuong soai chi di duoc trong cung cua no
-        if (is_theirs(first, "K") and abs(tr - r) + abs(tc - c) == 1
+        if (first == K and abs(tr - r) + abs(tc - c) == 1
                 and in_palace(r, c, by_side)):
             return True
         # Phao KHONG co ngoi: chi di duoc vao o TRONG
-        if is_theirs(first, "C") and here == ".":
+        if first == C and here == ".":
             return True
         # Di tiep qua quan do (lam ngoi) tim Phao phia sau.
         # Phao co ngoi thi chi AN duoc, tuc o dich phai co quan.
         if here != ".":
             tr += dr
             tc += dc
-            while in_bounds(tr, tc) and board[tr][tc] == ".":
+            while 0 <= tr < 10 and 0 <= tc < 9 and board[tr][tc] == ".":
                 tr += dr
                 tc += dc
-            if in_bounds(tr, tc) and is_theirs(board[tr][tc], "C"):
+            if 0 <= tr < 10 and 0 <= tc < 9 and board[tr][tc] == C:
                 return True
 
     # --- Ma: 8 o co the co Ma dung, kem kiem tra chan chan ---
     for dr, dc in ((2, 1), (2, -1), (-2, 1), (-2, -1),
                    (1, 2), (1, -2), (-1, 2), (-1, -2)):
         hr, hc = r + dr, c + dc          # vi tri Ma neu no an duoc o nay
-        if not in_bounds(hr, hc) or not is_theirs(board[hr][hc], "H"):
+        if not (0 <= hr < 10 and 0 <= hc < 9) or board[hr][hc] != H:
             continue
         # Chan Ma nam ke Ma, ve phia buoc dai cua chu L
         if abs(dr) == 2:
@@ -247,11 +255,11 @@ def is_square_attacked(board: Board, r: int, c: int, by_side: str) -> bool:
     # Tot cua by_side tien ve huong nao: Trang tien len (row giam), Den nguoc lai
     back = 1 if up else -1           # lui lai theo huong tien cua ho = tim o xuat phat
     pr, pc = r + back, c
-    if in_bounds(pr, pc) and is_theirs(board[pr][pc], "P"):
+    if 0 <= pr < 10 and 0 <= pc < 9 and board[pr][pc] == P:
         return True
     for dc in (1, -1):
         pr, pc = r, c + dc
-        if in_bounds(pr, pc) and is_theirs(board[pr][pc], "P"):
+        if 0 <= pr < 10 and 0 <= pc < 9 and board[pr][pc] == P:
             crossed = (pr <= 4) if up else (pr >= 5)
             if crossed:              # chi Tot da qua song moi di ngang duoc
                 return True
@@ -259,7 +267,7 @@ def is_square_attacked(board: Board, r: int, c: int, by_side: str) -> bool:
     # --- Si: cheo mot buoc trong cung ---
     for dr, dc in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
         ar, ac = r + dr, c + dc
-        if in_bounds(ar, ac) and is_theirs(board[ar][ac], "A") \
+        if 0 <= ar < 10 and 0 <= ac < 9 and board[ar][ac] == A \
                 and in_palace(ar, ac, by_side) and in_palace(r, c, by_side):
             return True
 
@@ -267,7 +275,7 @@ def is_square_attacked(board: Board, r: int, c: int, by_side: str) -> bool:
     if own_half(r, by_side):
         for dr, dc in ((2, 2), (2, -2), (-2, 2), (-2, -2)):
             er, ec = r + dr, c + dc
-            if in_bounds(er, ec) and is_theirs(board[er][ec], "E") \
+            if 0 <= er < 10 and 0 <= ec < 9 and board[er][ec] == E \
                     and board[er - dr // 2][ec - dc // 2] == ".":
                 return True
 
