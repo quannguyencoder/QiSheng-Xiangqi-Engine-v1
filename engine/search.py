@@ -21,8 +21,24 @@ from typing import Dict, List, Optional, Tuple
 from engine.board import (
     Board, Move, WHITE, BLACK, legal_moves, make_move, in_check,
 )
-from engine.evaluate import PIECE_VALUES, evaluate
+from engine.evaluate import PIECE_VALUES
+from engine.evaluate import evaluate as handcrafted_evaluate
 from engine.scoring import MIN_SCORE, MAX_SCORE
+
+# Ham danh gia dang dung. Mac dinh la danh gia thu cong (Python thuan, khong
+# phu thuoc gi). Co the thay bang mang no-ron qua set_evaluator() - xem
+# engine/nnue.py va co --nnue cua main.py.
+_evaluator = handcrafted_evaluate
+
+
+def set_evaluator(fn) -> None:
+    """Thay ham danh gia tinh ma search dung (nhan board, side -> diem 0..1000)."""
+    global _evaluator
+    _evaluator = fn
+
+
+def evaluate(board: Board, side_to_move: str) -> int:
+    return _evaluator(board, side_to_move)
 
 # --------------------------------------------------------------------------
 # Bam Zobrist

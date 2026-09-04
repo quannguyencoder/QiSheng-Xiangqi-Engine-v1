@@ -183,13 +183,94 @@ def kings_face_each_other(board: Board) -> bool:
 
 
 def is_square_attacked(board: Board, r: int, c: int, by_side: str) -> bool:
-    for rr in range(10):
-        for cc in range(9):
-            p = board[rr][cc]
-            if p != "." and color_of(p) == by_side:
-                for _, _, tr, tc in generate_pseudo_moves(board, rr, cc):
-                    if (tr, tc) == (r, c):
-                        return True
+    """O (r, c) co bi ben `by_side` tan cong khong?
+
+    Do tia NGUOC tu chinh o can kiem tra thay vi quet ca 90 o roi sinh toan bo
+    nuoc di cua doi phuong. Cung ket qua nhung it viec hon rat nhieu - day la
+    ham duoc goi nhieu nhat trong toan bo engine (moi nuoc di hop le deu goi).
+    """
+    up = by_side == WHITE          # quan cua by_side viet HOA hay thuong
+
+    # O da co quan cua chinh ben tan cong thi khong the "an" vao do
+    here = board[r][c]
+    if here != "." and here.isupper() == up:
+        return False
+
+    def is_theirs(ch: str, kind: str) -> bool:
+        return ch != "." and ch.isupper() == up and ch.upper() == kind
+
+    # --- Xe va Phao: di theo 4 tia thang ---
+    for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        tr, tc = r + dr, c + dc
+        while in_bounds(tr, tc) and board[tr][tc] == ".":
+            tr += dr
+            tc += dc
+        if not in_bounds(tr, tc):
+            continue
+        first = board[tr][tc]
+        # Xe: toi duoc o trong lan o co quan (an)
+        if is_theirs(first, "R"):
+            return True
+        # Tuong soai chi di duoc trong cung cua no
+        if (is_theirs(first, "K") and abs(tr - r) + abs(tc - c) == 1
+                and in_palace(r, c, by_side)):
+            return True
+        # Phao KHONG co ngoi: chi di duoc vao o TRONG
+        if is_theirs(first, "C") and here == ".":
+            return True
+        # Di tiep qua quan do (lam ngoi) tim Phao phia sau.
+        # Phao co ngoi thi chi AN duoc, tuc o dich phai co quan.
+        if here != ".":
+            tr += dr
+            tc += dc
+            while in_bounds(tr, tc) and board[tr][tc] == ".":
+                tr += dr
+                tc += dc
+            if in_bounds(tr, tc) and is_theirs(board[tr][tc], "C"):
+                return True
+
+    # --- Ma: 8 o co the co Ma dung, kem kiem tra chan chan ---
+    for dr, dc in ((2, 1), (2, -1), (-2, 1), (-2, -1),
+                   (1, 2), (1, -2), (-1, 2), (-1, -2)):
+        hr, hc = r + dr, c + dc          # vi tri Ma neu no an duoc o nay
+        if not in_bounds(hr, hc) or not is_theirs(board[hr][hc], "H"):
+            continue
+        # Chan Ma nam ke Ma, ve phia buoc dai cua chu L
+        if abs(dr) == 2:
+            leg_r, leg_c = hr - (1 if dr > 0 else -1), hc
+        else:
+            leg_r, leg_c = hr, hc - (1 if dc > 0 else -1)
+        if board[leg_r][leg_c] == ".":
+            return True
+
+    # --- Tot: an duoc o phia truoc va (sau khi qua song) hai ben ---
+    # Tot cua by_side tien ve huong nao: Trang tien len (row giam), Den nguoc lai
+    back = 1 if up else -1           # lui lai theo huong tien cua ho = tim o xuat phat
+    pr, pc = r + back, c
+    if in_bounds(pr, pc) and is_theirs(board[pr][pc], "P"):
+        return True
+    for dc in (1, -1):
+        pr, pc = r, c + dc
+        if in_bounds(pr, pc) and is_theirs(board[pr][pc], "P"):
+            crossed = (pr <= 4) if up else (pr >= 5)
+            if crossed:              # chi Tot da qua song moi di ngang duoc
+                return True
+
+    # --- Si: cheo mot buoc trong cung ---
+    for dr, dc in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        ar, ac = r + dr, c + dc
+        if in_bounds(ar, ac) and is_theirs(board[ar][ac], "A") \
+                and in_palace(ar, ac, by_side) and in_palace(r, c, by_side):
+            return True
+
+    # --- Tuong (voi): cheo hai buoc, khong bi can mat, KHONG qua song ---
+    if own_half(r, by_side):
+        for dr, dc in ((2, 2), (2, -2), (-2, 2), (-2, -2)):
+            er, ec = r + dr, c + dc
+            if in_bounds(er, ec) and is_theirs(board[er][ec], "E") \
+                    and board[er - dr // 2][ec - dc // 2] == ".":
+                return True
+
     return False
 
 

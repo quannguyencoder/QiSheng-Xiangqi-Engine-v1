@@ -33,7 +33,18 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Phan tich the co tuong")
     p.add_argument("fen", nargs="?", help="FEN cua the co (bo trong = the co khoi dau)")
     p.add_argument("--depth", type=int, default=1, help="Do sau tim kiem")
+    p.add_argument("--nnue", nargs="?", const="weights/eval_net.npz", default=None,
+                   help="Danh gia bang mang no-ron thay vi ham thu cong "
+                        "(mac dinh weights/eval_net.npz)")
     args = p.parse_args()
+
+    if args.nnue:
+        from engine.nnue import NnueEvaluator
+        from engine.search import set_evaluator
+        set_evaluator(NnueEvaluator(args.nnue).evaluate)
+        print(f"Danh gia: mang no-ron ({args.nnue})")
+    else:
+        print("Danh gia: ham thu cong (vat chat + co dong + vi tri)")
 
     if args.fen:
         board, side = fen_to_board(args.fen)
