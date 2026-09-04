@@ -198,6 +198,10 @@ def main() -> None:
     ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--hash", type=int, default=128)
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--no-quota", action="store_true",
+                    help="Bo han ngach giai doan: nhan MOI the co Pikafish cham diem. "
+                         "Nhanh hon nhieu lan (khong vut bo lan goi engine nao) nhung "
+                         "phan bo khai/trung/tan se troi theo tu nhien cua tu choi.")
     ap.add_argument("--engine-timeout", type=float, default=60.0,
                     help="So giay cho Pikafish tra loi truoc khi coi la treo "
                          "va khoi dong lai no")
@@ -257,7 +261,7 @@ def main() -> None:
                     #   - trung cuoc: giu quanh --mid-ratio (cho lech +4%)
                     #   - tan cuoc: khong duoc nhieu hon khai cuoc
                     # Van co van duoc danh tiep binh thuong du mau bi bo qua.
-                    if tong < 200 or ph == "khai_cuoc":
+                    if args.no_quota or tong < 200 or ph == "khai_cuoc":
                         du_quota = True
                     elif ph == "trung_cuoc":
                         du_quota = phase_count[ph] < args.mid_ratio * 1.04 * (tong + 1)
