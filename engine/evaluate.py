@@ -66,8 +66,12 @@ def positional_score(board: Board) -> int:
 # Tinh co dong dat: no phai SINH LAI toan bo nuoc di cua ca hai ben, chiem 24%
 # thoi gian tim kiem. Khi dung ham tron, mang NNUE da hoc duoc tinh co dong tu
 # 16 trieu the co Pikafish cham diem, nen co the tat di ma khong mat gi.
-# Bat/tat bang dat_co_dong(); mac dinh BAT de giu nguyen hanh vi cu.
-_DUNG_CO_DONG = True
+# Do doi khang 32 van: co va khong co tinh co dong CHENH NHAU 22 Elo, khoang tin
+# cay -101..+151 tuc khong phan biet duoc. Nhung do o CUNG DO SAU, cach do thiet
+# thoi cho ben nhanh hon. O cung THOI GIAN, ben tat co dong tim sau hon ~0,5 tang,
+# ma 2 tang dang 163 Elo (do duoc) nen nua tang dang ~40 Elo - lon hon 22 Elo co
+# the mat. Vi vay mac dinh TAT.
+_DUNG_CO_DONG = False
 
 
 def dat_co_dong(bat: bool) -> None:
