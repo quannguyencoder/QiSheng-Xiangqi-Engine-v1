@@ -469,24 +469,48 @@ int qs_nnue_nap(const float *w1, const float *b1,
     return 1;
 }
 
+static float nnue_tho(const char *b, int trang);
+
 static inline float kep01(float x) { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
 
-/* Tra ve xac suat thang cua Trang (0..1) theo mang. */
-static float nnue_tho(const char *b, int trang) {
-    const int n = SO_TICH_LUY, m = SO_AN;
-    for (int i = 0; i < n; i++) ACC[i] = B1[i];
-    /* Cong don cot trong so cua tung quan dang co tren ban */
+/* Tinh tich luy tu dau (quet ca ban co) */
+static void acc_tu_dau(const char *b, float *acc) {
+    const int n = SO_TICH_LUY;
+    for (int i = 0; i < n; i++) acc[i] = B1[i];
     for (int sq = 0; sq < 90; sq++) {
         char p = b[sq];
         if (p == '.') continue;
         int k = chi_so_nnue(p);
         if (k < 0) continue;
         const float *cot = W1 + (size_t)(k * 90 + sq) * n;
-        for (int i = 0; i < n; i++) ACC[i] += cot[i];
+        for (int i = 0; i < n; i++) acc[i] += cot[i];
     }
+}
+
+/* Cap nhat TANG DAN: quan di tu `from` sang `to`, co the an quan `q_an`.
+   Chi tru mot cot va cong mot (hoac hai) cot, thay vi cong lai ca 32 cot.
+   Day la diem manh cot loi cua kien truc NNUE. */
+static void acc_cap_nhat(const float *cha, float *con, char q_di,
+                         int from, int to, char q_an) {
+    const int n = SO_TICH_LUY;
+    int k = chi_so_nnue(q_di);
+    const float *bo = W1 + (size_t)(k * 90 + from) * n;
+    const float *them = W1 + (size_t)(k * 90 + to) * n;
+    if (q_an != '.') {
+        int ka = chi_so_nnue(q_an);
+        const float *bo2 = W1 + (size_t)(ka * 90 + to) * n;
+        for (int i = 0; i < n; i++) con[i] = cha[i] - bo[i] + them[i] - bo2[i];
+    } else {
+        for (int i = 0; i < n; i++) con[i] = cha[i] - bo[i] + them[i];
+    }
+}
+
+/* Tra ve xac suat thang cua Trang (0..1) theo mang, dung tich luy cho san. */
+static float nnue_tu_acc(const float *acc, int trang) {
+    const int n = SO_TICH_LUY, m = SO_AN;
     for (int j = 0; j < m; j++) H2[j] = B2[j];
     for (int i = 0; i < n; i++) {
-        float a = kep01(ACC[i]);
+        float a = kep01(acc[i]);
         if (a == 0.0f) continue;
         const float *hang = W2 + (size_t)i * m;
         for (int j = 0; j < m; j++) H2[j] += a * hang[j];
@@ -514,6 +538,19 @@ static int quy_doi(double tho, int trang) {
 }
 
 /* Danh gia TRON: (1-w) * thu cong + w * mang + lech, tat ca trong mot lan goi. */
+static int danh_gia_voi_acc(const char *b, int trang, const float *acc,
+                            double trong_so_mang, double lech) {
+    int a = quy_doi((double)qs_danh_gia_tho(b), trang);
+    double bnn = (double)nnue_tu_acc(acc, trang) * 1000.0;
+    if (bnn < 1.0) bnn = 1.0;
+    if (bnn > 999.0) bnn = 999.0;
+    double d = (1.0 - trong_so_mang) * a + trong_so_mang * bnn + lech;
+    long r = lround(d);
+    if (r < 1) r = 1;
+    if (r > 999) r = 999;
+    return (int)r;
+}
+
 int qs_danh_gia_tron(const char *b, int trang, double trong_so_mang, double lech) {
     int a = quy_doi((double)qs_danh_gia_tho(b), trang);
     double bnn = (double)nnue_tho(b, trang) * 1000.0;
@@ -527,6 +564,11 @@ int qs_danh_gia_tron(const char *b, int trang, double trong_so_mang, double lech
 }
 
 /* Chi mang, dung de doi chieu voi ban NumPy */
+static float nnue_tho(const char *b, int trang) {
+    acc_tu_dau(b, ACC);
+    return nnue_tu_acc(ACC, trang);
+}
+
 int qs_nnue_danh_gia(const char *b, int trang) {
     double v = (double)nnue_tho(b, trang) * 1000.0;
     long r = lround(v);
@@ -564,6 +606,9 @@ typedef struct {
     int nuoc;
 } TTMuc;
 
+#define ACC_PLY_MAX 160
+static float *ACC_STACK = 0;      /* [ply][SO_TICH_LUY] */
+
 static TTMuc *TT = 0;
 static int KILLER[PLY_TOI_DA][2];
 static int *HISTORY = 0;         /* [o_di * 90 + o_den] */
@@ -574,6 +619,8 @@ static const short GIA_TRI_AN[7] = {900, 400, 200, 200, 0, 450, 100};
 
 void qs_tim_kiem_khoi_tao(double trong_so, double lech) {
     if (!TT) TT = (TTMuc *)calloc(TT_SO, sizeof(TTMuc));
+    free(ACC_STACK);
+    ACC_STACK = (float *)malloc(sizeof(float) * ACC_PLY_MAX * SO_TICH_LUY);
     if (!HISTORY) HISTORY = (int *)calloc(90 * 90, sizeof(int));
     TRONG_SO_MANG = trong_so;
     LECH_HIEU_CHINH = lech;
@@ -642,15 +689,30 @@ static inline void chon_tot_nhat(int *mv, int *khoa, int n, int i) {
     }
 }
 
-static int danh_gia(const char *b, int trang) {
+static inline float *acc_o(int ply) {
+    return ACC_STACK + (size_t)ply * SO_TICH_LUY;
+}
+
+/* Danh gia tai nut: dung tich luy da tinh san cho ply nay.
+   Neu vuot ngan xep (quiescence rat sau khi bi chieu lien tuc) thi tinh lai
+   tu dau - dung nhung cham, va truong hop do rat hiem. */
+static int danh_gia(const char *b, int trang, int ply) {
+    if (ply < ACC_PLY_MAX)
+        return danh_gia_voi_acc(b, trang, acc_o(ply), TRONG_SO_MANG, LECH_HIEU_CHINH);
     return qs_danh_gia_tron(b, trang, TRONG_SO_MANG, LECH_HIEU_CHINH);
+}
+
+/* Chuan bi tich luy cho nut con truoc khi di xuong */
+static inline void acc_xuong(int ply, char q_di, int from, int to, char q_an) {
+    if (ply + 1 < ACC_PLY_MAX)
+        acc_cap_nhat(acc_o(ply), acc_o(ply + 1), q_di, from, to, q_an);
 }
 
 static int quiescence(char *b, int trang, int alpha, int beta,
                       int ply, int ply_goc) {
     SO_NUT++;
     int bi_chieu = qs_bi_chieu(b, trang);
-    int dung_yen = danh_gia(b, trang);
+    int dung_yen = danh_gia(b, trang, ply_goc + ply);
     if (ply >= QUIESCENCE_TOI_DA && !bi_chieu) return dung_yen;
 
     int mv[256];
@@ -676,6 +738,7 @@ static int quiescence(char *b, int trang, int alpha, int beta,
             chon_tot_nhat(mv, khoa, n, i);
             int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
             char q_di = b[from], q_an = b[to];
+            acc_xuong(ply_goc + ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
             int sc = quiescence(b, 0, alpha, beta, ply + 1, ply_goc);
             b[from] = q_di; b[to] = q_an;
@@ -694,6 +757,7 @@ static int quiescence(char *b, int trang, int alpha, int beta,
             chon_tot_nhat(mv, khoa, n, i);
             int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
             char q_di = b[from], q_an = b[to];
+            acc_xuong(ply_goc + ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
             int sc = quiescence(b, 1, alpha, beta, ply + 1, ply_goc);
             b[from] = q_di; b[to] = q_an;
@@ -757,7 +821,9 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
     if (cho_bo_luot && ply > 0 && do_sau >= NULL_MIN_DEPTH && !bi_chieu
             && co_quan_manh(b, trang)) {
         int d = do_sau - 1 - NULL_R;
-        if (d > 0) {
+        if (d > 0 && ply + 1 < ACC_PLY_MAX) {
+            /* Bo luot khong doi ban co -> tich luy giu nguyen */
+            memcpy(acc_o(ply + 1), acc_o(ply), sizeof(float) * SO_TICH_LUY);
             if (trang) {
                 int sc = tim(b, 0, d, beta - 1, beta, ply + 1, 0, 0);
                 if (sc >= beta) return beta;
@@ -785,6 +851,7 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
                 giam = (i < 7) ? 1 : 2;
                 if (giam >= do_sau) giam = do_sau - 1;
             }
+            acc_xuong(ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
             int bo_qua = 0;
             if (giam) {
@@ -813,6 +880,7 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
                 giam = (i < 7) ? 1 : 2;
                 if (giam >= do_sau) giam = do_sau - 1;
             }
+            acc_xuong(ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
             int bo_qua = 0;
             if (giam) {
@@ -835,6 +903,7 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
         for (int i = 0; i < n; i++) {
             int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
             char q_di = b[from], q_an = b[to];
+            acc_xuong(ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
             int sc = tim(b, !trang, do_sau - 1, alpha_goc, beta_goc,
                          ply + 1, 1, 0);
@@ -862,11 +931,34 @@ int qs_tim_kiem(const char *b_in, int trang, int do_sau, int *diem, long long *s
     if (!TT) qs_tim_kiem_khoi_tao(TRONG_SO_MANG, LECH_HIEU_CHINH);
     for (int i = 0; i < TT_SO; i++) TT[i].khoa = 0;
     xoa_heuristic();
+    if (ACC_STACK) acc_tu_dau(b, acc_o(0));
     SO_NUT = 0;
     int nuoc = -1, d_cuoi = 500;
-    for (int d = 1; d <= do_sau; d++) {      /* iterative deepening */
+    /* --- Iterative deepening kem ASPIRATION WINDOW ---
+     * Diem cua vong sau thuong rat gan diem vong truoc. Nen thay vi tim voi
+     * cua so day du [0, 1000], ta tim voi cua so hep quanh diem cu. Cua so hep
+     * lam alpha-beta cat som hon nhieu. Neu diem that roi ra ngoai cua so
+     * (fail high/low) thi noi rong ra tim lai - it khi xay ra nen van loi.
+     */
+    for (int d = 1; d <= do_sau; d++) {
         int n_tmp = -1;
-        d_cuoi = tim(b, trang, d, DIEM_MIN, DIEM_MAX, 0, 1, &n_tmp);
+        if (d <= 3) {
+            d_cuoi = tim(b, trang, d, DIEM_MIN, DIEM_MAX, 0, 1, &n_tmp);
+        } else {
+            int rong = 12;
+            while (1) {
+                int a = d_cuoi - rong, be = d_cuoi + rong;
+                if (a < DIEM_MIN) a = DIEM_MIN;
+                if (be > DIEM_MAX) be = DIEM_MAX;
+                int sc = tim(b, trang, d, a, be, 0, 1, &n_tmp);
+                if ((sc > a && sc < be) || (a == DIEM_MIN && be == DIEM_MAX)) {
+                    d_cuoi = sc;
+                    break;
+                }
+                rong *= 4;               /* ra ngoai cua so -> noi rong tim lai */
+                if (rong > 1000) { a = DIEM_MIN; be = DIEM_MAX; }
+            }
+        }
         if (n_tmp >= 0) nuoc = n_tmp;
     }
     if (diem) *diem = d_cuoi;
