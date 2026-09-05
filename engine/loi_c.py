@@ -1,9 +1,9 @@
 """
-QiSheng - cau noi toi phan loi viet bang C (csrc/qisheng.c).
+XuanWu - cau noi toi phan loi viet bang C (csrc/xuanwu.c).
 
 Vi sao co file nay: sinh nuoc di va phat hien chieu chiem 55% thoi gian tim
 kiem va deu la vong lap Python quet tung o. Viet lai bang C rieng phan do.
-Day KHONG phai dung thu vien co ngoai - toan bo luat co tuong trong qisheng.c
+Day KHONG phai dung thu vien co ngoai - toan bo luat co tuong trong xuanwu.c
 la code cua chinh du an, va duoc kiem chung bang perft doi chieu voi ban Python.
 
 Diem thiet ke quan trong: goi C MOT lan cho ca nut (tra ve toan bo nuoc di hop
@@ -38,45 +38,45 @@ def _nap() -> Optional[ctypes.CDLL]:
     if _da_thu:
         return _thu_vien
     _da_thu = True
-    duong = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libqisheng.so")
+    duong = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libxuanwu.so")
     if not os.path.exists(duong):
         return None
     try:
         lib = ctypes.CDLL(duong)
     except OSError:
         return None
-    lib.qs_gen_legal.restype = ctypes.c_int
-    lib.qs_gen_legal.argtypes = [ctypes.c_char_p, ctypes.c_int,
+    lib.xw_gen_legal.restype = ctypes.c_int
+    lib.xw_gen_legal.argtypes = [ctypes.c_char_p, ctypes.c_int,
                                  ctypes.POINTER(ctypes.c_int)]
-    lib.qs_bi_chieu.restype = ctypes.c_int
-    lib.qs_bi_chieu.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.xw_bi_chieu.restype = ctypes.c_int
+    lib.xw_bi_chieu.argtypes = [ctypes.c_char_p, ctypes.c_int]
     F = ctypes.POINTER(ctypes.c_float)
-    lib.qs_tim_kiem.restype = ctypes.c_int
-    lib.qs_tim_kiem.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int,
+    lib.xw_tim_kiem.restype = ctypes.c_int
+    lib.xw_tim_kiem.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int,
                                 ctypes.POINTER(ctypes.c_int),
                                 ctypes.POINTER(ctypes.c_longlong)]
-    lib.qs_tim_kiem_khoi_tao.argtypes = [ctypes.c_double, ctypes.c_double]
-    lib.qs_dat_keo_dai.argtypes = [ctypes.c_int]
-    lib.qs_dat_theo_pha.argtypes = [ctypes.c_int, ctypes.c_double,
+    lib.xw_tim_kiem_khoi_tao.argtypes = [ctypes.c_double, ctypes.c_double]
+    lib.xw_dat_keo_dai.argtypes = [ctypes.c_int]
+    lib.xw_dat_theo_pha.argtypes = [ctypes.c_int, ctypes.c_double,
                                     ctypes.c_double, ctypes.c_double]
-    lib.qs_nnue_nap.restype = ctypes.c_int
-    lib.qs_nnue_nap.argtypes = [F, F, F, F, F, ctypes.c_float,
+    lib.xw_nnue_nap.restype = ctypes.c_int
+    lib.xw_nnue_nap.argtypes = [F, F, F, F, F, ctypes.c_float,
                                 ctypes.c_int, ctypes.c_int]
-    lib.qs_nnue_danh_gia.restype = ctypes.c_int
-    lib.qs_nnue_danh_gia.argtypes = [ctypes.c_char_p, ctypes.c_int]
-    lib.qs_danh_gia_tron.restype = ctypes.c_int
-    lib.qs_danh_gia_tron.argtypes = [ctypes.c_char_p, ctypes.c_int,
+    lib.xw_nnue_danh_gia.restype = ctypes.c_int
+    lib.xw_nnue_danh_gia.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.xw_danh_gia_tron.restype = ctypes.c_int
+    lib.xw_danh_gia_tron.argtypes = [ctypes.c_char_p, ctypes.c_int,
                                      ctypes.c_double, ctypes.c_double]
-    lib.qs_dac_trung.restype = ctypes.c_int
-    lib.qs_dac_trung.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
-    lib.qs_bam.restype = ctypes.c_ulonglong
-    lib.qs_bam.argtypes = [ctypes.c_char_p, ctypes.c_int]
-    lib.qs_dat_zobrist.argtypes = [ctypes.POINTER(ctypes.c_ulonglong),
+    lib.xw_dac_trung.restype = ctypes.c_int
+    lib.xw_dac_trung.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
+    lib.xw_bam.restype = ctypes.c_ulonglong
+    lib.xw_bam.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.xw_dat_zobrist.argtypes = [ctypes.POINTER(ctypes.c_ulonglong),
                                    ctypes.c_ulonglong]
-    lib.qs_danh_gia_tho.restype = ctypes.c_int
-    lib.qs_danh_gia_tho.argtypes = [ctypes.c_char_p]
-    lib.qs_perft.restype = ctypes.c_longlong
-    lib.qs_perft.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+    lib.xw_danh_gia_tho.restype = ctypes.c_int
+    lib.xw_danh_gia_tho.argtypes = [ctypes.c_char_p]
+    lib.xw_perft.restype = ctypes.c_longlong
+    lib.xw_perft.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
     _thu_vien = lib
     return lib
 
@@ -95,24 +95,24 @@ def nuoc_di_hop_le(board: Board, side: str) -> List[Move]:
     """Toan bo nuoc di hop le, tinh trong C bang MOT lan goi."""
     lib = _nap()
     b = _sang_c(board)
-    n = lib.qs_gen_legal(b, 1 if side == WHITE else 0, _dem)
+    n = lib.xw_gen_legal(b, 1 if side == WHITE else 0, _dem)
     giai = _GIAI_MA
     return [giai[_dem[i]] for i in range(n)]
 
 
 def bi_chieu(board: Board, side: str) -> bool:
     lib = _nap()
-    return bool(lib.qs_bi_chieu(_sang_c(board), 1 if side == WHITE else 0))
+    return bool(lib.xw_bi_chieu(_sang_c(board), 1 if side == WHITE else 0))
 
 
 def perft(board: Board, side: str, depth: int) -> int:
     lib = _nap()
-    return int(lib.qs_perft(_sang_c(board), 1 if side == WHITE else 0, depth))
+    return int(lib.xw_perft(_sang_c(board), 1 if side == WHITE else 0, depth))
 
 
 def danh_gia_tho(board: Board) -> int:
     """Vat chat + vi tri, tinh trong C. Doi chieu 2.000 the co khong lech."""
-    return _nap().qs_danh_gia_tho(_sang_c(board))
+    return _nap().xw_danh_gia_tho(_sang_c(board))
 
 
 _dt = (ctypes.c_int * 90)()
@@ -125,18 +125,18 @@ def nap_zobrist(bang, den) -> None:
     if _da_nap_zobrist:
         return
     mang = (ctypes.c_ulonglong * (14 * 90))(*bang)
-    _nap().qs_dat_zobrist(mang, ctypes.c_ulonglong(den))
+    _nap().xw_dat_zobrist(mang, ctypes.c_ulonglong(den))
     _da_nap_zobrist = True
 
 
 def dac_trung(board: Board):
     """Chi so dac trung NNUE cua the co, liet ke trong C."""
-    n = _nap().qs_dac_trung(_sang_c(board), _dt)
+    n = _nap().xw_dac_trung(_sang_c(board), _dt)
     return _dt, n
 
 
 def bam(board: Board, side: str) -> int:
-    return int(_nap().qs_bam(_sang_c(board), 1 if side == WHITE else 0))
+    return int(_nap().xw_bam(_sang_c(board), 1 if side == WHITE else 0))
 
 
 _da_nap_mang = False
@@ -154,7 +154,7 @@ def nap_mang(w1, b1, w2, b2, w3, b3) -> bool:
         return np.ascontiguousarray(a, dtype=np.float32).ctypes.data_as(F)
     # Giu tham chieu de NumPy khong thu hoi bo nho truoc khi C chep xong
     giu = [np.ascontiguousarray(x, dtype=np.float32) for x in (w1, b1, w2, b2, w3)]
-    ok = lib.qs_nnue_nap(giu[0].ctypes.data_as(F), giu[1].ctypes.data_as(F),
+    ok = lib.xw_nnue_nap(giu[0].ctypes.data_as(F), giu[1].ctypes.data_as(F),
                          giu[2].ctypes.data_as(F), giu[3].ctypes.data_as(F),
                          giu[4].ctypes.data_as(F), ctypes.c_float(float(b3)),
                          int(w1.shape[1]), int(w2.shape[1]))
@@ -167,12 +167,12 @@ def da_nap_mang() -> bool:
 
 
 def nnue_danh_gia(board: Board, side: str) -> int:
-    return _nap().qs_nnue_danh_gia(_sang_c(board), 1 if side == WHITE else 0)
+    return _nap().xw_nnue_danh_gia(_sang_c(board), 1 if side == WHITE else 0)
 
 
 def danh_gia_tron(board: Board, side: str, trong_so: float, lech: float) -> int:
     """Ham danh gia hoan chinh: thu cong + mang + tron, mot lan goi duy nhat."""
-    return _nap().qs_danh_gia_tron(_sang_c(board), 1 if side == WHITE else 0,
+    return _nap().xw_danh_gia_tron(_sang_c(board), 1 if side == WHITE else 0,
                                    trong_so, lech)
 
 
@@ -181,12 +181,12 @@ _nut_ra = ctypes.c_longlong()
 
 
 def tim_kiem_khoi_tao(trong_so: float, lech: float) -> None:
-    _nap().qs_tim_kiem_khoi_tao(ctypes.c_double(trong_so), ctypes.c_double(lech))
+    _nap().xw_tim_kiem_khoi_tao(ctypes.c_double(trong_so), ctypes.c_double(lech))
 
 
 def tim_kiem(board: Board, side: str, depth: int):
     """Toan bo tim kiem chay trong C. Tra ve (diem, nuoc di, so nut)."""
-    ma = _nap().qs_tim_kiem(_sang_c(board), 1 if side == WHITE else 0, depth,
+    ma = _nap().xw_tim_kiem(_sang_c(board), 1 if side == WHITE else 0, depth,
                             ctypes.byref(_diem_ra), ctypes.byref(_nut_ra))
     nuoc = None if ma < 0 else _GIAI_MA[ma]
     return _diem_ra.value, nuoc, _nut_ra.value
@@ -195,10 +195,10 @@ def tim_kiem(board: Board, side: str, depth: int):
 def dat_theo_pha(bat: bool, w_khai: float = 0.8, w_trung: float = 0.8,
                  w_tan: float = 0.2) -> None:
     """Bat/tat trong so mang theo giai doan van co."""
-    _nap().qs_dat_theo_pha(1 if bat else 0, ctypes.c_double(w_khai),
+    _nap().xw_dat_theo_pha(1 if bat else 0, ctypes.c_double(w_khai),
                            ctypes.c_double(w_trung), ctypes.c_double(w_tan))
 
 
 def dat_keo_dai(bat: bool) -> None:
     """Bat/tat keo dai mot tang khi nuoc di gay chieu."""
-    _nap().qs_dat_keo_dai(1 if bat else 0)
+    _nap().xw_dat_keo_dai(1 if bat else 0)

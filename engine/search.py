@@ -1,5 +1,5 @@
 """
-QiSheng - tim kiem nuoc di.
+XuanWu - tim kiem nuoc di.
 
 Gom 4 ky thuat:
   1. Alpha-beta tren khung minimax (Trang toi da hoa, Den toi thieu hoa).

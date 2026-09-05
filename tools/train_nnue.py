@@ -1,5 +1,5 @@
 """
-QiSheng - huan luyen mang kieu NNUE (thay cho CNN trong tools/train.py).
+XuanWu - huan luyen mang kieu NNUE (thay cho CNN trong tools/train.py).
 
 Vi sao doi kien truc: do thuc te tren may nay cho thay CNN mat 312 us moi lan
 danh gia, ham thu cong 89 us, con mang NNUE nay chi mat 20 us khi tinh lai tu
@@ -126,6 +126,8 @@ def main() -> None:
     ap.add_argument("--hidden", type=int, default=SO_AN)
     ap.add_argument("--checkpoint", default="weights/nnue_net.pt")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--lich-hoc", action="store_true",
+                    help="Giam toc do hoc dan theo cosine")
     ap.add_argument("--thang-tanh", type=float, default=None,
                     help="Tinh lai nhan bang tanh(cp/SCALE) thay vi dung nhan\n"
                          "sigmoid(cp/200) co san. Dung 1600 de khop engine.")
@@ -169,6 +171,10 @@ def main() -> None:
     print(f"Mang NNUE: {so_tham_so:,} tham so "
           f"(CNN cu: 797.313)", flush=True)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # Lich giam toc do hoc theo cosine. Truoc day giu nguyen lr suot 29 epoch,
+    # nen cuoi qua trinh mang cu nhay quanh diem toi uu thay vi lang xuong.
+    sched = (torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
+             if args.lich_hoc else None)
     loss_fn = nn.MSELoss()
 
     def chay_val():
@@ -199,6 +205,8 @@ def main() -> None:
             opt.step()
             tot += loss.item() * len(idx)
             cnt += len(idx)
+        if sched is not None:
+            sched.step()
         vl = chay_val()
         mark = ""
         if vl < best:
@@ -208,8 +216,10 @@ def main() -> None:
                         "accum": args.accum, "hidden": args.hidden}, args.checkpoint)
         else:
             bad += 1
+        lr_hien = opt.param_groups[0]["lr"]
         print(f"Epoch {ep:2d}: train {tot/cnt:.5f} val {vl:.5f}"
-              f"  (RMSE {vl**0.5*1000:.0f} diem, {time.time()-t:.0f}s){mark}", flush=True)
+              f"  (RMSE {vl**0.5*1000:.0f} diem, {time.time()-t:.0f}s, "
+              f"lr {lr_hien:.2e}){mark}", flush=True)
         if bad >= args.patience:
             print(f"Dung som o epoch {ep}", flush=True)
             break

@@ -1,5 +1,5 @@
 """
-QiSheng - kiem tra ham danh gia co HIEU DUNG VE VAT CHAT khong.
+XuanWu - kiem tra ham danh gia co HIEU DUNG VE VAT CHAT khong.
 
 Vi sao can bai nay: mo hinh chi hoc tu chessdb tung hieu NGUOC - khi Den mat
 mot Xe, no cham cho Trang THAP di 38,6 diem, va chi doan dung huong 19% so lan.

@@ -1,0 +1,17 @@
+A = tron 60/40 (C)
+B = tron 100/0 (C)
+60 van, A depth 8 vs B depth 8, tu 30 the co khai cuoc khac nhau
+
+  van 1/60: A cam Trang -> B thang  (A: 0.0/1)
+  van 2/60: A cam Den -> A THANG  (A: 1.0/2)
+  van 3/60: A cam Trang -> A THANG  (A: 2.0/3)
+  van 4/60: A cam Den -> B thang  (A: 2.0/4)
+  van 5/60: A cam Trang -> A THANG  (A: 3.0/5)
+  van 6/60: A cam Den -> A THANG  (A: 4.0/6)
+  van 7/60: A cam Trang -> B thang  (A: 4.0/7)
+  van 8/60: A cam Den -> A THANG  (A: 5.0/8)
+  van 9/60: A cam Trang -> hoa  (A: 5.5/9)
+  van 10/60: A cam Den -> A THANG  (A: 6.5/10)
+  van 11/60: A cam Trang -> A THANG  (A: 7.5/11)
+  van 12/60: A cam Den -> A THANG  (A: 8.5/12)
+  van 13/60: A cam Trang -> A THANG  (A: 9.5/13)

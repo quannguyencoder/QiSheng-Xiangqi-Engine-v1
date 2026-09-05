@@ -1,0 +1,13 @@
+[21:17:46] === MANG THANG TANH: thuan vs tron 50/50 ===
+B = mang NNUE (nnue_tanh.npz)
+A duoc 26.5/48 = 55.2% (24 thang, 5 hoa, 19 thua)
+Chenh lech Elo cua A so voi B: +36 (khoang tin cay 95%: -62 den +141)
+B = tron 50% thu cong + 50% mang (nnue_tanh.npz)
+A duoc 17.0/48 = 35.4% (13 thang, 8 hoa, 27 thua)
+Chenh lech Elo cua A so voi B: -104 (khoang tin cay 95%: -221 den -7)
+[21:21:53] === DOI DAU TRUC TIEP: tron-tanh vs mang-tanh thuan ===
+A = mang NNUE (nnue_tanh.npz)
+B = tron 50% thu cong + 50% mang (nnue_tanh.npz)
+A duoc 13.0/48 = 27.1% (10 thang, 6 hoa, 32 thua)
+Chenh lech Elo cua A so voi B: -172 (khoang tin cay 95%: -308 den -73)
+[21:23:12] === XONG ===

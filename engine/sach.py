@@ -1,5 +1,5 @@
 """
-QiSheng - tra cuu SACH KHAI CUOC.
+XuanWu - tra cuu SACH KHAI CUOC.
 
 Sach do tools/build_book.py soan tu chinh du lieu huan luyen: moi lan goi
 Pikafish luc thu thap deu tra ve nuoc di tot nhat, va ta da luu lai. Nen day la

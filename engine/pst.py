@@ -1,5 +1,5 @@
 """
-QiSheng - piece-square table: gia tri cong them theo VI TRI cua tung quan.
+XuanWu - piece-square table: gia tri cong them theo VI TRI cua tung quan.
 
 Bang viet theo goc nhin TRANG (hang 9 = hau phuong Trang, hang 0 = hau phuong Den,
 Trang tien len phia hang 0). Voi quan Den, bang duoc lat nguoc theo chieu doc.

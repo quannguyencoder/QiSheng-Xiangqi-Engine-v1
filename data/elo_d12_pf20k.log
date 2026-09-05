@@ -1,0 +1,8 @@
+Danh gia: tron 60/40 (tim kiem trong C)
+30 van tu 15 the co khai cuoc khac nhau (moi the danh ca hai mau quan)
+  van 1/30: QiSheng cam Trang -> thua  (tong 0.0/1)
+  van 2/30: QiSheng cam Den -> hoa  (tong 0.5/2)
+  van 3/30: QiSheng cam Trang -> thua  (tong 0.5/3)
+  van 4/30: QiSheng cam Den -> hoa  (tong 1.0/4)
+  van 5/30: QiSheng cam Trang -> hoa  (tong 1.5/5)
+  van 6/30: QiSheng cam Den -> hoa  (tong 2.0/6)

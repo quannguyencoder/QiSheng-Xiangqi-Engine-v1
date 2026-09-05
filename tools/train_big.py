@@ -1,5 +1,5 @@
 """
-QiSheng - huan luyen mang danh gia tren tap du lieu lon.
+XuanWu - huan luyen mang danh gia tren tap du lieu lon.
 
 Khac tools/train.py o mot diem quan trong: trich dac trung MOT LAN roi giu
 trong bo nho dang uint8, thay vi goi fen_to_tensor lai o moi epoch. Voi hang

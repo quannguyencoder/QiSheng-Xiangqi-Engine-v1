@@ -1,5 +1,5 @@
 """
-QiSheng - danh gia the co bang mang no-ron, chay bang NumPy.
+XuanWu - danh gia the co bang mang no-ron, chay bang NumPy.
 
 Vi sao khong dung thang PyTorch trong search: search goi ham danh gia o hang
 nghin nut moi lan tim kiem. Moi lan goi PyTorch keo theo chi phi khoi tao

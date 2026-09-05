@@ -1,5 +1,5 @@
 """
-QiSheng - kiem thu engine.  Chay: python3 tests/test_engine.py
+XuanWu - kiem thu engine.  Chay: python3 tests/test_engine.py
 
 Perft (dem so the co la o do sau N) doi chieu voi gia tri chuan cua co tuong -
 day la luoi an toan quan trong nhat: chi can mot loi nho trong luat di quan la

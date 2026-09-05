@@ -1,0 +1,10 @@
+A = tron 60% thu cong + 40% mang (nnue_tanh.npz)
+B = tron 60% thu cong + 40% mang (nnue_tanh.npz)
+16 van, A depth 3 vs B depth 5, tu 8 the co khai cuoc khac nhau
+
+  van 1/16: A cam Trang -> B thang  (A: 0.0/1)
+  van 2/16: A cam Den -> B thang  (A: 0.0/2)
+  van 3/16: A cam Trang -> B thang  (A: 0.0/3)
+  van 4/16: A cam Den -> hoa  (A: 0.5/4)
+  van 5/16: A cam Trang -> hoa  (A: 1.0/5)
+  van 6/16: A cam Den -> hoa  (A: 1.5/6)

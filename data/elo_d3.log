@@ -1,0 +1,10 @@
+A = ham thu cong
+B = mang NNUE (nnue_net.npz)
+10 van, depth 3, tu 5 the co khai cuoc khac nhau
+
+  van 1/10: A cam Trang -> B thang  (A: 0.0/1)
+  van 2/10: A cam Den -> A THANG  (A: 1.0/2)
+  van 3/10: A cam Trang -> B thang  (A: 1.0/3)
+  van 4/10: A cam Den -> hoa  (A: 1.5/4)
+  van 5/10: A cam Trang -> hoa  (A: 2.0/5)
+  van 6/10: A cam Den -> B thang  (A: 2.0/6)

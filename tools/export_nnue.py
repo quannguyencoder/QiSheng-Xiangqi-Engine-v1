@@ -1,5 +1,5 @@
 """
-QiSheng - xuat mang da huan luyen tu PyTorch (.pt) sang NumPy (.npz).
+XuanWu - xuat mang da huan luyen tu PyTorch (.pt) sang NumPy (.npz).
 
 Sau khi xuat, engine danh gia bang engine/nnue.py ma khong can PyTorch -
 luc choi chi can NumPy.

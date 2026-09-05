@@ -1,0 +1,28 @@
+[21:17:37] === XUAT MANG THANG TANH ===
+Da xuat weights/nnue_tanh.pt -> weights/nnue_tanh.npz (1.2 MB)
+Doi chieu PyTorch vs NumPy tren 60 the co: lech lon nhat 0.49 diem -> KHOP
+Doi chieu tang dan vs tinh lai: lech lon nhat 0.000003 -> KHOP
+[21:17:38] === TEST VAT CHAT ===
+Quan bi xoa             Doi diem TB   Dung huong   So the
+---------------------------------------------------------
+Xe cua Den            +       161.7         100%      200
+Xe cua Trang                -166.0         100%      200
+Ma cua Den            +        70.1          96%      200
+Ma cua Trang                 -70.7          98%      200
+Phao cua Den          +        84.6         100%      200
+Phao cua Trang               -79.6          97%      200
+---------------------------------------------------------
+TONG                                         98%     1200
+
+KET LUAN: hieu dung ve vat chat.
+[21:17:39] === DAU depth 1, 48 van ===
+A duoc 26.5/48 = 55.2% (24 thang, 5 hoa, 19 thua)
+Thoi gian: 2.0 phut
+Sai so chuan: +/-7.2 diem phan tram
+Chenh lech Elo cua A so voi B: +36 (khoang tin cay 95%: -62 den +141)
+[21:19:41] === DAU depth 2, 24 van ===
+A duoc 14.0/24 = 58.3% (11 thang, 6 hoa, 7 thua)
+Thoi gian: 7.8 phut
+Sai so chuan: +/-10.1 diem phan tram
+Chenh lech Elo cua A so voi B: +58 (khoang tin cay 95%: -81 den +220)
+[21:27:28] === XONG ===

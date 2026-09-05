@@ -1,8 +1,8 @@
 """
-QiSheng - danh doi khang voi Pikafish de DO SUC CO THAT.
+XuanWu - danh doi khang voi Pikafish de DO SUC CO THAT.
 
 Cho toi truoc khi co file nay, du an khong co cach nao do Elo, nen README
-khong dam ghi bat ky con so suc co nao. Cach do: cho QiSheng danh nhieu van
+khong dam ghi bat ky con so suc co nao. Cach do: cho XuanWu danh nhieu van
 voi Pikafish bi ha suc (gioi han do sau / thoi gian), doi ben moi van, roi
 suy ra chenh lech Elo tu ti le diem.
 
@@ -32,6 +32,7 @@ from tools.collect_openings import board_to_fen, fen_to_board, iccs_to_move
 from tools.label_pikafish import EngineTreo
 
 _DUNG_C = False
+_DUNG_SACH = False
 
 
 class Pikafish:
@@ -119,12 +120,12 @@ class Pikafish:
 def doc_khai_cuoc(path: str, so_van: int, seed: int):
     """Lay cac the co khai cuoc THAT tu chessdb de moi van bat dau mot kieu khac.
 
-    Vi sao bat buoc phai co: ca QiSheng lan Pikafish deu danh TAT DINH. Neu moi
+    Vi sao bat buoc phai co: ca XuanWu lan Pikafish deu danh TAT DINH. Neu moi
     van deu bat dau tu the co khoi dau thi van 1 va van 3 (cung mau quan) se
     giong het nhau tung nuoc. Danh 20 van ma that ra chi co 2 van khac nhau,
     va ti le diem tinh ra khong co y nghia thong ke nao.
 
-    Moi the co khai cuoc duoc danh HAI lan - mot lan QiSheng cam Trang, mot lan
+    Moi the co khai cuoc duoc danh HAI lan - mot lan XuanWu cam Trang, mot lan
     cam Den - de triet tieu loi the/bat loi cua rieng the co do.
     """
     fens = []
@@ -149,9 +150,9 @@ def doc_khai_cuoc(path: str, so_van: int, seed: int):
     return ra[:so_van]
 
 
-def play_game(eng: Pikafish, qisheng_is_white: bool, depth: int, max_plies: int,
+def play_game(eng: Pikafish, xuanwu_is_white: bool, depth: int, max_plies: int,
               fen_dau: Optional[str] = None):
-    """Tra ve 1.0 neu QiSheng thang, 0.5 hoa, 0.0 thua."""
+    """Tra ve 1.0 neu XuanWu thang, 0.5 hoa, 0.0 thua."""
     if fen_dau:
         board, side = fen_to_board(fen_dau)
     else:
@@ -160,11 +161,21 @@ def play_game(eng: Pikafish, qisheng_is_white: bool, depth: int, max_plies: int,
         moves = legal_moves(board, side)
         if not moves:
             # Ben den luot het nuoc di = thua (dung luat co tuong)
-            qisheng_to_move = (side == WHITE) == qisheng_is_white
-            return 0.0 if qisheng_to_move else 1.0
+            xuanwu_to_move = (side == WHITE) == xuanwu_is_white
+            return 0.0 if xuanwu_to_move else 1.0
 
-        if (side == WHITE) == qisheng_is_white:
-            if _DUNG_C:
+        if (side == WHITE) == xuanwu_is_white:
+            mv = None
+            if _DUNG_SACH:
+                # Sach khai cuoc: nuoc Pikafish depth 10 da chon, tot hon search
+                # cua ta o khai cuoc va lay ra tuc thi. Truoc day sach da dung
+                # nhung KHONG BAO GIO duoc dung trong cac phep do Elo.
+                from engine import sach
+                from engine.search import board_hash
+                mv = sach.tra_sach(board, side, board_hash(board, side))
+            if mv is not None:
+                pass
+            elif _DUNG_C:
                 _, mv, _ = loi_c.tim_kiem(board, side, depth)
             else:
                 _, mv = evaluate_current_position(board, side, depth=depth)
@@ -193,10 +204,10 @@ def play_game(eng: Pikafish, qisheng_is_white: bool, depth: int, max_plies: int,
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Do suc co QiSheng vs Pikafish")
+    ap = argparse.ArgumentParser(description="Do suc co XuanWu vs Pikafish")
     ap.add_argument("--binary", default="/Users/quan.nguyen/quannguyen/Coding/Pikafish/src/pikafish")
     ap.add_argument("--games", type=int, default=10)
-    ap.add_argument("--qisheng-depth", type=int, default=2)
+    ap.add_argument("--xuanwu-depth", type=int, default=2)
     ap.add_argument("--pikafish-depth", type=int, default=1)
     ap.add_argument("--pikafish-nodes", type=int, default=0,
                     help="Ha suc Pikafish bang gioi han so nut tim kiem (0 = khong gioi han)")
@@ -208,11 +219,14 @@ def main() -> None:
                     help="Cau hinh manh nhat: tim kiem + danh gia trong C")
     ap.add_argument("--mang", default="weights/nnue_tanh.npz")
     ap.add_argument("--trong-so", type=float, default=0.4)
+    ap.add_argument("--sach", action="store_true",
+                    help="Dung sach khai cuoc (2,4 trieu the co tu Pikafish)")
     ap.add_argument("--nnue", default=None, help="Dung mang CNN (.npz) thay danh gia thu cong")
     ap.add_argument("--nnue-net", default=None, help="Dung mang NNUE (.npz) thay danh gia thu cong")
     args = ap.parse_args()
 
-    global _DUNG_C
+    global _DUNG_C, _DUNG_SACH
+    _DUNG_SACH = args.sach
     from engine.search import set_evaluator
     if args.manh_nhat:
         # Cau hinh manh nhat: tim kiem + danh gia deu trong C
@@ -247,14 +261,14 @@ def main() -> None:
     t0 = time.time()
     try:
         for g in range(args.games):
-            qs_white = (g % 2 == 0)       # doi ben moi van cho cong bang
-            r = play_game(eng, qs_white, args.qisheng_depth, args.max_plies,
+            xw_white = (g % 2 == 0)       # doi ben moi van cho cong bang
+            r = play_game(eng, xw_white, args.xuanwu_depth, args.max_plies,
                           khai_cuoc[g])
             score += r
             results.append(r)
             ten = {1.0: "THANG", 0.5: "hoa", 0.0: "thua"}[r]
-            print(f"  van {g+1}/{args.games}: QiSheng cam "
-                  f"{'Trang' if qs_white else 'Den'} -> {ten}"
+            print(f"  van {g+1}/{args.games}: XuanWu cam "
+                  f"{'Trang' if xw_white else 'Den'} -> {ten}"
                   f"  (tong {score}/{g+1})", flush=True)
     finally:
         eng.close()

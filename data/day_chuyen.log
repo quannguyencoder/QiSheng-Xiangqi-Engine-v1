@@ -1,0 +1,106 @@
+[20:25:58] === HUAN LUYEN NNUE 16 trieu mau, toi da 35 epoch ===
+Doc du lieu...
+  data/data_pikafish_s0.jsonl: tong 363,424 mau
+  data/data_pikafish_s1.jsonl: tong 1,696,758 mau
+  data/data_pikafish_s10.jsonl: tong 1,866,758 mau
+  data/data_pikafish_s11.jsonl: tong 2,036,758 mau
+  data/data_pikafish_s12.jsonl: tong 2,068,758 mau
+  data/data_pikafish_s13.jsonl: tong 2,100,758 mau
+  data/data_pikafish_s14.jsonl: tong 2,132,758 mau
+  data/data_pikafish_s15.jsonl: tong 2,164,758 mau
+  data/data_pikafish_s16.jsonl: tong 3,504,758 mau
+  data/data_pikafish_s17.jsonl: tong 4,844,758 mau
+  data/data_pikafish_s18.jsonl: tong 6,184,758 mau
+  data/data_pikafish_s19.jsonl: tong 7,524,758 mau
+  data/data_pikafish_s2.jsonl: tong 8,858,092 mau
+  data/data_pikafish_s20.jsonl: tong 10,198,092 mau
+  data/data_pikafish_s21.jsonl: tong 11,538,092 mau
+  data/data_pikafish_s22.jsonl: tong 11,555,695 mau
+  data/data_pikafish_s3.jsonl: tong 12,872,749 mau
+  data/data_pikafish_s4.jsonl: tong 14,206,083 mau
+  data/data_pikafish_s5.jsonl: tong 14,997,188 mau
+  data/data_pikafish_s6.jsonl: tong 15,397,188 mau
+  data/data_pikafish_s7.jsonl: tong 15,797,188 mau
+  data/data_pikafish_s8.jsonl: tong 15,967,188 mau
+  data/data_pikafish_s9.jsonl: tong 16,137,188 mau
+  data/data_crawl_s0.jsonl: tong 16,140,921 mau
+  data/data_crawl_s1.jsonl: tong 16,144,644 mau
+  data/data_crawl_s2.jsonl: tong 16,148,393 mau
+  data/data_crawl_s3.jsonl: tong 16,152,083 mau
+  data/data_crawl_s4.jsonl: tong 16,155,806 mau
+  data/data_crawl_s5.jsonl: tong 16,159,583 mau
+  data/data_openings_chessdb.jsonl: tong 16,164,880 mau
+  data/training_set.jsonl: tong 16,202,299 mau
+Dung 16,000,000 mau doc nhat
+Trich dac trung (mot lan duy nhat)...
+  1,000,000/16,000,000 (7s)
+  2,000,000/16,000,000 (14s)
+  3,000,000/16,000,000 (20s)
+  4,000,000/16,000,000 (28s)
+  5,000,000/16,000,000 (35s)
+  6,000,000/16,000,000 (42s)
+  7,000,000/16,000,000 (49s)
+  8,000,000/16,000,000 (56s)
+  9,000,000/16,000,000 (63s)
+  10,000,000/16,000,000 (70s)
+  11,000,000/16,000,000 (79s)
+  12,000,000/16,000,000 (86s)
+  13,000,000/16,000,000 (93s)
+  14,000,000/16,000,000 (100s)
+  15,000,000/16,000,000 (108s)
+  16,000,000/16,000,000 (116s)
+Xong: 119s, 2.70 GB
+train 15,200,000 | val 800,000
+Mang NNUE: 331,105 tham so (CNN cu: 797.313)
+Epoch  1: train 0.01743 val 0.01377  (RMSE 117 diem, 36s) *
+Epoch  2: train 0.01277 val 0.01287  (RMSE 113 diem, 34s) *
+Epoch  3: train 0.01164 val 0.01147  (RMSE 107 diem, 39s) *
+Epoch  4: train 0.01096 val 0.01103  (RMSE 105 diem, 33s) *
+Epoch  5: train 0.01052 val 0.01082  (RMSE 104 diem, 31s) *
+Epoch  6: train 0.01019 val 0.01053  (RMSE 103 diem, 47s) *
+Epoch  7: train 0.00996 val 0.01039  (RMSE 102 diem, 48s) *
+Epoch  8: train 0.00978 val 0.01029  (RMSE 101 diem, 36s) *
+Epoch  9: train 0.00964 val 0.01023  (RMSE 101 diem, 33s) *
+Epoch 10: train 0.00953 val 0.01012  (RMSE 101 diem, 38s) *
+Epoch 11: train 0.00943 val 0.01011  (RMSE 101 diem, 32s) *
+Epoch 12: train 0.00935 val 0.01007  (RMSE 100 diem, 31s) *
+Epoch 13: train 0.00928 val 0.01011  (RMSE 101 diem, 33s)
+Epoch 14: train 0.00922 val 0.01006  (RMSE 100 diem, 33s) *
+Epoch 15: train 0.00917 val 0.01001  (RMSE 100 diem, 32s) *
+Epoch 16: train 0.00912 val 0.01001  (RMSE 100 diem, 34s)
+Epoch 17: train 0.00909 val 0.01003  (RMSE 100 diem, 33s)
+Epoch 18: train 0.00905 val 0.01010  (RMSE 101 diem, 32s)
+Epoch 19: train 0.00901 val 0.00997  (RMSE 100 diem, 34s) *
+Epoch 20: train 0.00898 val 0.00994  (RMSE 100 diem, 38s) *
+Epoch 21: train 0.00895 val 0.00997  (RMSE 100 diem, 35s)
+Epoch 22: train 0.00892 val 0.01004  (RMSE 100 diem, 33s)
+Epoch 23: train 0.00890 val 0.00993  (RMSE 100 diem, 39s) *
+Epoch 24: train 0.00887 val 0.01010  (RMSE 101 diem, 35s)
+Epoch 25: train 0.00884 val 0.00992  (RMSE 100 diem, 32s) *
+Epoch 26: train 0.00883 val 0.00997  (RMSE 100 diem, 35s)
+Epoch 27: train 0.00880 val 0.00998  (RMSE 100 diem, 39s)
+Epoch 28: train 0.00878 val 0.00995  (RMSE 100 diem, 36s)
+Epoch 29: train 0.00876 val 0.00996  (RMSE 100 diem, 33s)
+Dung som o epoch 29
+Tot nhat: val 0.00992 (RMSE 100 diem) -> weights/nnue_net.pt
+[20:45:43] === HUAN LUYEN XONG -> xuat sang NumPy ===
+Da xuat weights/nnue_net.pt -> weights/nnue_net.npz (1.2 MB)
+Doi chieu PyTorch vs NumPy tren 60 the co: lech lon nhat 0.50 diem -> KHOP
+Doi chieu tang dan vs tinh lai: lech lon nhat 0.000003 -> KHOP
+[20:45:44] === TEST VAT CHAT ===
+Danh gia: mang NNUE (weights/nnue_net.npz)
+Kiem tra tren toi da 300 the co moi loai quan
+
+Quan bi xoa             Doi diem TB   Dung huong   So the
+---------------------------------------------------------
+Xe cua Den            +       379.6          99%      300
+Xe cua Trang                -326.9         100%      300
+Ma cua Den            +       171.5          97%      300
+Ma cua Trang                -166.9          98%      300
+Phao cua Den          +       223.8          96%      300
+Phao cua Trang              -193.0          98%      300
+---------------------------------------------------------
+TONG                                         98%     1800
+
+KET LUAN: hieu dung ve vat chat.
+[20:45:45] === XONG - san sang do Elo ===

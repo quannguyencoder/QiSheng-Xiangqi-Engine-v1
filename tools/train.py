@@ -1,11 +1,11 @@
 """
 Huan luyen mang danh gia the co (CNN nho) tren du lieu thu thap tu chessdb.cn
 (xem collect_xiangqi_data.py). Day la lop "hoc sau" bo sung cho ham danh gia
-thu cong trong qisheng.py - khong dung engine co ngoai luc chay/thi dau,
+thu cong trong xuanwu.py - khong dung engine co ngoai luc chay/thi dau,
 chi dung PyTorch (thu vien ML tong quat) de train mang cua rieng minh.
 
 Input: 15 mat phang 10x9 (7 loai quan x 2 mau + 1 mat phang "ben nao di").
-Output: diem 0..1000 (goc nhin Trang), khop thang diem cua qisheng.py.
+Output: diem 0..1000 (goc nhin Trang), khop thang diem cua xuanwu.py.
 """
 
 import argparse

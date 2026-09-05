@@ -4,14 +4,14 @@ Xiangqi Cloud Database (chessdb.cn) - mot co so du lieu cong dong duoc phan
 tich boi cac engine manh (Pikafish...) + endgame tablebase, muc do phan tich
 o cac dong khai cuoc/tan cuoc pho bien vuot xa 2000 elo.
 
-Cach dung: engine tu viet trong qisheng.py di mot "self-play walk" bat
+Cach dung: engine tu viet trong xuanwu.py di mot "self-play walk" bat
 dau tu the co khoi diem, moi buoc hoi chessdb.cn ve the co hien tai (duoc ca
 diem danh gia lan danh sach nuoc di goi y), luu lai thanh 1 dong du lieu, roi
 chon (co ngau nhien uu tien nuoc tot) mot trong cac nuoc goi y de di tiep.
 Nho vay duong di luon nam trong vung du lieu da duoc chessdb phan tich sau.
 
 Engine ngoai (chessdb.cn) chi dung o day, luc thu thap du lieu offline -
-khong duoc goi luc AI thi dau/choi that (xem qisheng.py).
+khong duoc goi luc AI thi dau/choi that (xem xuanwu.py).
 
 API: https://www.chessdb.cn/cloudbook_api_en.html
 """
@@ -37,7 +37,7 @@ from engine.board import (
 CHESSDB_URL = "http://www.chessdb.cn/chessdb.php"
 USER_AGENT = "AI_co_tuong-data-collector/1.0 (educational self-study project)"
 
-# Chu FEN chuan (kieu co vua quoc te) khac chu noi bo cua qisheng.py o 2 quan:
+# Chu FEN chuan (kieu co vua quoc te) khac chu noi bo cua xuanwu.py o 2 quan:
 INTERNAL_TO_FEN = {"H": "N", "E": "B"}
 FEN_TO_INTERNAL = {"N": "H", "B": "E"}
 
@@ -146,7 +146,7 @@ def query_chessdb_queryall(fen: str, delay: float = 0.0, timeout: float = 10.0,
 
 def to_white_score(winrate_for_mover: float, side_to_move: str) -> int:
     """winrate cua chessdb la ti le thang cua BEN DANG DI (mover-relative),
-    doi ve thang diem tuyet doi 0..1000 theo goc nhin Trang nhu qisheng.py."""
+    doi ve thang diem tuyet doi 0..1000 theo goc nhin Trang nhu xuanwu.py."""
     white_winrate = winrate_for_mover if side_to_move == WHITE else (100.0 - winrate_for_mover)
     return max(0, min(1000, round(white_winrate * 10)))
 

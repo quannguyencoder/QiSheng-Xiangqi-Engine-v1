@@ -1,5 +1,5 @@
 """
-QiSheng - sinh va gan nhan the co bang Pikafish chay LOCAL.
+XuanWu - sinh va gan nhan the co bang Pikafish chay LOCAL.
 
 Vi sao lam the nay: Pikafish la ENGINE, khong phai kho du lieu - no khong co
 san the co nao de lay. Ta phai tu sinh the co roi dua cho no cham diem.
@@ -14,7 +14,7 @@ Thinh thoang co y di nuoc ngau nhien (--random-prob) hoac nuoc an quan
 (--capture-prob) de tao the co LECH QUAN - dung cho lo hong ma du lieu
 chessdb khong co (chessdb gan nhu chi co khai cuoc can bang).
 
-Nhan 100% den tu Pikafish. Engine cua QiSheng khong tham gia cham diem.
+Nhan 100% den tu Pikafish. Engine cua XuanWu khong tham gia cham diem.
 """
 
 import argparse
@@ -39,7 +39,7 @@ MATE_CP = 30000
 
 
 def cp_to_score(cp: int) -> int:
-    """Centipawn (goc nhin Trang) -> thang 0..1000 cua QiSheng."""
+    """Centipawn (goc nhin Trang) -> thang 0..1000 cua XuanWu."""
     return max(0, min(1000, round(1000 / (1 + math.exp(-cp / CP_SCALE)))))
 
 

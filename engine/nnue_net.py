@@ -1,5 +1,5 @@
 """
-QiSheng - danh gia the co bang mang kieu NNUE, chay bang NumPy.
+XuanWu - danh gia the co bang mang kieu NNUE, chay bang NumPy.
 
 Khac engine/nnue.py (mang CNN) o cho: kien truc nay duoc thiet ke de CAP NHAT
 TANG DAN. Lop dau tien la mot phep cong don cac cot trong so ung voi tung quan

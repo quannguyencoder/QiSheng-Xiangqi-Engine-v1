@@ -1,0 +1,55 @@
+Doc du lieu...
+  data/data_pikafish_s0.jsonl: 363,424
+  data/data_pikafish_s1.jsonl: 1,696,758
+  data/data_pikafish_s10.jsonl: 1,866,758
+  data/data_pikafish_s11.jsonl: 2,036,758
+  data/data_pikafish_s12.jsonl: 2,068,758
+  data/data_pikafish_s13.jsonl: 2,100,758
+  data/data_pikafish_s14.jsonl: 2,132,758
+  data/data_pikafish_s15.jsonl: 2,164,758
+  data/data_pikafish_s16.jsonl: 3,504,758
+  data/data_pikafish_s17.jsonl: 4,844,758
+  data/data_pikafish_s18.jsonl: 6,184,758
+  data/data_pikafish_s19.jsonl: 7,524,758
+  data/data_pikafish_s2.jsonl: 8,858,092
+  data/data_pikafish_s20.jsonl: 10,198,092
+  data/data_pikafish_s21.jsonl: 11,538,092
+  data/data_pikafish_s22.jsonl: 11,555,695
+  data/data_pikafish_s3.jsonl: 12,872,749
+  data/data_pikafish_s4.jsonl: 14,206,083
+  data/data_pikafish_s5.jsonl: 14,997,188
+  data/data_pikafish_s6.jsonl: 15,397,188
+  data/data_pikafish_s7.jsonl: 15,797,188
+  data/data_pikafish_s8.jsonl: 15,967,188
+  data/data_pikafish_s9.jsonl: 16,137,188
+Dung 16,000,000 mau
+Trich dac trung...
+  2,000,000/16,000,000 (101s)
+  4,000,000/16,000,000 (207s)
+  6,000,000/16,000,000 (305s)
+  8,000,000/16,000,000 (327s)
+  10,000,000/16,000,000 (349s)
+  12,000,000/16,000,000 (378s)
+  14,000,000/16,000,000 (3579s)
+  16,000,000/16,000,000 (3656s)
+Xong: 16,000,000 mau hop le, 3656s, 2.05 GB
+Tham so: 5,814,625
+Epoch  1: train 0.01054 val 0.00667 (RMSE 82 diem, 426s) *
+Epoch  2: train 0.00590 val 0.00577 (RMSE 76 diem, 469s) *
+Epoch  3: train 0.00514 val 0.00539 (RMSE 73 diem, 52s) *
+Epoch  4: train 0.00472 val 0.00517 (RMSE 72 diem, 43s) *
+Epoch  5: train 0.00444 val 0.00503 (RMSE 71 diem, 45s) *
+Epoch  6: train 0.00424 val 0.00495 (RMSE 70 diem, 45s) *
+Epoch  7: train 0.00409 val 0.00491 (RMSE 70 diem, 45s) *
+Epoch  8: train 0.00397 val 0.00488 (RMSE 70 diem, 50s) *
+Epoch  9: train 0.00387 val 0.00484 (RMSE 70 diem, 43s) *
+Epoch 10: train 0.00378 val 0.00483 (RMSE 69 diem, 43s) *
+Epoch 11: train 0.00371 val 0.00481 (RMSE 69 diem, 44s) *
+Epoch 12: train 0.00364 val 0.00478 (RMSE 69 diem, 41s) *
+Epoch 13: train 0.00358 val 0.00482 (RMSE 69 diem, 48s)
+Epoch 14: train 0.00353 val 0.00480 (RMSE 69 diem, 51s)
+Epoch 15: train 0.00349 val 0.00479 (RMSE 69 diem, 48s)
+Epoch 16: train 0.00345 val 0.00480 (RMSE 69 diem, 48s)
+Epoch 17: train 0.00341 val 0.00481 (RMSE 69 diem, 49s)
+Dung som o epoch 17
+Tot nhat: val 0.00478 (RMSE 69) -> weights/halfkp.pt

@@ -1,5 +1,5 @@
 """
-QiSheng - quy doi diem danh gia sang thang 0..1000 theo goc nhin Trang.
+XuanWu - quy doi diem danh gia sang thang 0..1000 theo goc nhin Trang.
 
   500  = can bang
   505  = the co khoi dau (Trang di truoc, +5 diem tempo)

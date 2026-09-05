@@ -1,5 +1,5 @@
 """
-QiSheng - cho HAI PHIEN BAN QiSheng danh truc tiep voi nhau.
+XuanWu - cho HAI PHIEN BAN XuanWu danh truc tiep voi nhau.
 
 Vi sao can cai nay thay vi chi do qua Pikafish: cau hoi that su la "ham danh
 gia nao manh hon", ma do qua doi thu thu ba chi tra loi gian tiep. Cho hai
@@ -148,7 +148,7 @@ def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="QiSheng vs QiSheng, khac ham danh gia")
+    ap = argparse.ArgumentParser(description="XuanWu vs XuanWu, khac ham danh gia")
     ap.add_argument("--a", default="thu-cong")
     ap.add_argument("--b", required=True)
     ap.add_argument("--games", type=int, default=20)

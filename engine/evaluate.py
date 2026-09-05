@@ -1,5 +1,5 @@
 """
-QiSheng - danh gia tinh mot the co (khong tim kiem).
+XuanWu - danh gia tinh mot the co (khong tim kiem).
 
 Hien dung: vat chat + co dong. Piece-square table se duoc them o giai doan 2.
 Ket qua tra ve da o thang 0..1000 (xem scoring.py).

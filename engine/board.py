@@ -1,5 +1,5 @@
 """
-QiSheng - bieu dien ban co va luat di quan (khong dung thu vien co ngoai).
+XuanWu - bieu dien ban co va luat di quan (khong dung thu vien co ngoai).
 
 Ban co: 10 hang (0..9) x 9 cot (0..8).
   Hang 0 = hau phuong Den (tren cung), hang 9 = hau phuong Trang (duoi cung).

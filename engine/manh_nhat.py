@@ -1,5 +1,5 @@
 """
-QiSheng - cau hinh MANH NHAT: tim kiem va danh gia deu chay trong C.
+XuanWu - cau hinh MANH NHAT: tim kiem va danh gia deu chay trong C.
 
 Gop tat ca lai mot cho de nguoi dung khong phai tu nap mang, tu tinh hieu chinh,
 tu khoi tao bang chuyen vi. Goi tim_nuoc_di() la xong.

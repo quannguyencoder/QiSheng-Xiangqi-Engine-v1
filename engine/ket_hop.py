@@ -1,5 +1,5 @@
 """
-QiSheng - tron ham danh gia thu cong voi mang no-ron.
+XuanWu - tron ham danh gia thu cong voi mang no-ron.
 
 Vi sao can: do doi khang cho thay mang NNUE cham diem chinh xac hon (sai so
 100 diem so voi Pikafish) va chay nhanh hon, nhung DANH CO KEM HON ham thu

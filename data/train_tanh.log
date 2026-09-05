@@ -1,0 +1,67 @@
+Doc du lieu...
+Tinh lai nhan theo thang tanh(cp/1600)
+  data/data_pikafish_s0.jsonl: tong 363,424 mau
+  data/data_pikafish_s1.jsonl: tong 1,696,758 mau
+  data/data_pikafish_s10.jsonl: tong 1,866,758 mau
+  data/data_pikafish_s11.jsonl: tong 2,036,758 mau
+  data/data_pikafish_s12.jsonl: tong 2,068,758 mau
+  data/data_pikafish_s13.jsonl: tong 2,100,758 mau
+  data/data_pikafish_s14.jsonl: tong 2,132,758 mau
+  data/data_pikafish_s15.jsonl: tong 2,164,758 mau
+  data/data_pikafish_s16.jsonl: tong 3,504,758 mau
+  data/data_pikafish_s17.jsonl: tong 4,844,758 mau
+  data/data_pikafish_s18.jsonl: tong 6,184,758 mau
+  data/data_pikafish_s19.jsonl: tong 7,524,758 mau
+  data/data_pikafish_s2.jsonl: tong 8,858,092 mau
+  data/data_pikafish_s20.jsonl: tong 10,198,092 mau
+  data/data_pikafish_s21.jsonl: tong 11,538,092 mau
+  data/data_pikafish_s22.jsonl: tong 11,555,695 mau
+  data/data_pikafish_s3.jsonl: tong 12,872,749 mau
+  data/data_pikafish_s4.jsonl: tong 14,206,083 mau
+  data/data_pikafish_s5.jsonl: tong 14,997,188 mau
+  data/data_pikafish_s6.jsonl: tong 15,397,188 mau
+  data/data_pikafish_s7.jsonl: tong 15,797,188 mau
+  data/data_pikafish_s8.jsonl: tong 15,967,188 mau
+  data/data_pikafish_s9.jsonl: tong 16,137,188 mau
+  data/data_crawl_s0.jsonl: tong 16,140,921 mau
+  data/data_crawl_s1.jsonl: tong 16,144,644 mau
+  data/data_crawl_s2.jsonl: tong 16,148,393 mau
+  data/data_crawl_s3.jsonl: tong 16,152,083 mau
+  data/data_crawl_s4.jsonl: tong 16,155,806 mau
+  data/data_crawl_s5.jsonl: tong 16,159,583 mau
+  data/data_openings_chessdb.jsonl: tong 16,164,880 mau
+  data/training_set.jsonl: tong 16,202,299 mau
+Dung 16,000,000 mau doc nhat
+Trich dac trung (mot lan duy nhat)...
+  1,000,000/16,000,000 (7s)
+  2,000,000/16,000,000 (14s)
+  3,000,000/16,000,000 (21s)
+  4,000,000/16,000,000 (28s)
+  5,000,000/16,000,000 (36s)
+  6,000,000/16,000,000 (48s)
+  7,000,000/16,000,000 (55s)
+  8,000,000/16,000,000 (62s)
+  9,000,000/16,000,000 (69s)
+  10,000,000/16,000,000 (79s)
+  11,000,000/16,000,000 (86s)
+  12,000,000/16,000,000 (93s)
+  13,000,000/16,000,000 (101s)
+  14,000,000/16,000,000 (112s)
+  15,000,000/16,000,000 (121s)
+  16,000,000/16,000,000 (128s)
+Xong: 130s, 2.70 GB
+train 15,200,000 | val 800,000
+Mang NNUE: 331,105 tham so (CNN cu: 797.313)
+Epoch  1: train 0.00475 val 0.00398  (RMSE 63 diem, 46s) *
+Epoch  2: train 0.00375 val 0.00362  (RMSE 60 diem, 54s) *
+Epoch  3: train 0.00352 val 0.00351  (RMSE 59 diem, 61s) *
+Epoch  4: train 0.00338 val 0.00342  (RMSE 58 diem, 90s) *
+Epoch  5: train 0.00328 val 0.00335  (RMSE 58 diem, 64s) *
+Epoch  6: train 0.00322 val 0.00332  (RMSE 58 diem, 103s) *
+Epoch  7: train 0.00317 val 0.00329  (RMSE 57 diem, 56s) *
+Epoch  8: train 0.00313 val 0.00327  (RMSE 57 diem, 54s) *
+Epoch  9: train 0.00310 val 0.00326  (RMSE 57 diem, 47s) *
+Epoch 10: train 0.00307 val 0.00323  (RMSE 57 diem, 54s) *
+Epoch 11: train 0.00304 val 0.00325  (RMSE 57 diem, 44s)
+Epoch 12: train 0.00302 val 0.00323  (RMSE 57 diem, 46s) *
+Tot nhat: val 0.00323 (RMSE 57 diem) -> weights/nnue_tanh.pt

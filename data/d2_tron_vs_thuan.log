@@ -1,0 +1,29 @@
+A = mang NNUE (nnue_tanh.npz)
+B = tron 50% thu cong + 50% mang (nnue_tanh.npz)
+20 van, depth 2, tu 10 the co khai cuoc khac nhau
+
+  van 1/20: A cam Trang -> B thang  (A: 0.0/1)
+  van 2/20: A cam Den -> B thang  (A: 0.0/2)
+  van 3/20: A cam Trang -> B thang  (A: 0.0/3)
+  van 4/20: A cam Den -> B thang  (A: 0.0/4)
+  van 5/20: A cam Trang -> B thang  (A: 0.0/5)
+  van 6/20: A cam Den -> A THANG  (A: 1.0/6)
+  van 7/20: A cam Trang -> B thang  (A: 1.0/7)
+  van 8/20: A cam Den -> B thang  (A: 1.0/8)
+  van 9/20: A cam Trang -> hoa  (A: 1.5/9)
+  van 10/20: A cam Den -> hoa  (A: 2.0/10)
+  van 11/20: A cam Trang -> B thang  (A: 2.0/11)
+  van 12/20: A cam Den -> B thang  (A: 2.0/12)
+  van 13/20: A cam Trang -> B thang  (A: 2.0/13)
+  van 14/20: A cam Den -> A THANG  (A: 3.0/14)
+  van 15/20: A cam Trang -> B thang  (A: 3.0/15)
+  van 16/20: A cam Den -> B thang  (A: 3.0/16)
+  van 17/20: A cam Trang -> B thang  (A: 3.0/17)
+  van 18/20: A cam Den -> B thang  (A: 3.0/18)
+  van 19/20: A cam Trang -> B thang  (A: 3.0/19)
+  van 20/20: A cam Den -> B thang  (A: 3.0/20)
+
+A duoc 3.0/20 = 15.0% (2 thang, 2 hoa, 16 thua)
+Thoi gian: 6.3 phut
+Sai so chuan: +/-8.0 diem phan tram
+Chenh lech Elo cua A so voi B: -301 (khoang tin cay 95%: -1200 den -142)

@@ -1,5 +1,5 @@
 """
-QiSheng - CLI phan tich mot the co tuong.
+XuanWu - CLI phan tich mot the co tuong.
 
   python3 main.py                          # the co khoi dau
   python3 main.py "<FEN>" --depth 2        # mot the co bat ky

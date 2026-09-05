@@ -1,0 +1,27 @@
+  data/data_pikafish_s0.jsonl: sach co 56,653 muc
+  data/data_pikafish_s1.jsonl: sach co 262,575 muc
+  data/data_pikafish_s10.jsonl: sach co 289,070 muc
+  data/data_pikafish_s11.jsonl: sach co 315,767 muc
+  data/data_pikafish_s12.jsonl: sach co 320,649 muc
+  data/data_pikafish_s13.jsonl: sach co 325,628 muc
+  data/data_pikafish_s14.jsonl: sach co 330,772 muc
+  data/data_pikafish_s15.jsonl: sach co 335,755 muc
+  data/data_pikafish_s16.jsonl: sach co 540,460 muc
+  data/data_pikafish_s17.jsonl: sach co 743,041 muc
+  data/data_pikafish_s18.jsonl: sach co 944,708 muc
+  data/data_pikafish_s19.jsonl: sach co 1,144,225 muc
+  data/data_pikafish_s2.jsonl: sach co 1,339,147 muc
+  data/data_pikafish_s20.jsonl: sach co 1,535,747 muc
+  data/data_pikafish_s21.jsonl: sach co 1,730,708 muc
+  data/data_pikafish_s22.jsonl: sach co 1,733,316 muc
+  data/data_pikafish_s3.jsonl: sach co 1,921,505 muc
+  data/data_pikafish_s4.jsonl: sach co 2,109,972 muc
+  data/data_pikafish_s5.jsonl: sach co 2,222,347 muc
+  data/data_pikafish_s6.jsonl: sach co 2,279,073 muc
+  data/data_pikafish_s7.jsonl: sach co 2,336,383 muc
+  data/data_pikafish_s8.jsonl: sach co 2,360,802 muc
+  data/data_pikafish_s9.jsonl: sach co 2,385,042 muc
+  data/data_openings_chessdb.jsonl: sach co 2,385,375 muc
+
+Doc 16,142,485 dong | bo qua 13,623,121 (khong phai khai cuoc) | loi 0
+Sach: 2,385,375 the co -> weights/sach_khai_cuoc.npz (21.3 MB)

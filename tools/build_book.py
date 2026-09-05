@@ -1,5 +1,5 @@
 """
-QiSheng - dung SACH KHAI CUOC tu du lieu da co.
+XuanWu - dung SACH KHAI CUOC tu du lieu da co.
 
 Khi thu thap 16 trieu the co, moi lan goi Pikafish deu tra ve CA diem CA nuoc
 di tot nhat, va ta da luu ca hai. Truong best_move do tu truoc toi nay chua

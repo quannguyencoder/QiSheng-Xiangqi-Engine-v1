@@ -1,0 +1,25 @@
+A = tron 60% thu cong + 40% mang (nnue_tanh.npz)
+B = tron 60% thu cong + 40% mang (nnue_tanh.npz)
+16 van, A depth 2 vs B depth 4, tu 8 the co khai cuoc khac nhau
+
+  van 1/16: A cam Trang -> hoa  (A: 0.5/1)
+  van 2/16: A cam Den -> B thang  (A: 0.5/2)
+  van 3/16: A cam Trang -> B thang  (A: 0.5/3)
+  van 4/16: A cam Den -> B thang  (A: 0.5/4)
+  van 5/16: A cam Trang -> hoa  (A: 1.0/5)
+  van 6/16: A cam Den -> hoa  (A: 1.5/6)
+  van 7/16: A cam Trang -> hoa  (A: 2.0/7)
+  van 8/16: A cam Den -> hoa  (A: 2.5/8)
+  van 9/16: A cam Trang -> hoa  (A: 3.0/9)
+  van 10/16: A cam Den -> B thang  (A: 3.0/10)
+  van 11/16: A cam Trang -> B thang  (A: 3.0/11)
+  van 12/16: A cam Den -> hoa  (A: 3.5/12)
+  van 13/16: A cam Trang -> hoa  (A: 4.0/13)
+  van 14/16: A cam Den -> B thang  (A: 4.0/14)
+  van 15/16: A cam Trang -> hoa  (A: 4.5/15)
+  van 16/16: A cam Den -> B thang  (A: 4.5/16)
+
+A duoc 4.5/16 = 28.1% (0 thang, 9 hoa, 7 thua)
+Thoi gian: 12.3 phut
+Sai so chuan: +/-11.2 diem phan tram
+Chenh lech Elo cua A so voi B: -163 (khoang tin cay 95%: -475 den +1)

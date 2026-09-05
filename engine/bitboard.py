@@ -1,5 +1,5 @@
 """
-QiSheng - ban co bang BIT, tang toc sinh nuoc di va phat hien chieu.
+XuanWu - ban co bang BIT, tang toc sinh nuoc di va phat hien chieu.
 
 Vi sao lam duoc trong Python thuan: ban co tuong co 90 o, ma so nguyen Python
 la so lon vo han - ca ban co nhet vua MOT bien int. Moi phep dich, AND, OR tren

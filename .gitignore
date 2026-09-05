@@ -25,5 +25,5 @@ data/seeds_chessdb.jsonl
 data/training_set.jsonl
 data/train_big.log
 data/sample_positions.jsonl
-engine/libqisheng.so
+engine/libxuanwu.so
 weights/sach_khai_cuoc.npz

@@ -1,17 +1,21 @@
 <div align="center">
 
-# QiSheng — Xiangqi Engine v1
+# XuanWu — Xiangqi Engine v1
 
-**棋聖**
+**玄武 · The Black Tortoise**
 
-### A Xiangqi AI built from nothing but Python
+### A Xiangqi AI built from scratch
+
+Named after the Black Tortoise of the four celestial guardians — a turtle entwined with a serpent.
+The turtle is patience and defence; the serpent is speed and cunning. The engine plays that way:
+in 24 games against Pikafish it lost once and drew twenty times.
 
 No chess library. No borrowed engine. Every rule, every search, every evaluation — written from scratch.
 
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
-![Runtime](https://img.shields.io/badge/runtime-zero%20dependencies-success)
 ![Perft](https://img.shields.io/badge/perft-verified%20✓-success)
 ![Positions](https://img.shields.io/badge/training%20positions-16M-blue)
+![Depth](https://img.shields.io/badge/depth%2012-6.4s-blueviolet)
 ![Scale](https://img.shields.io/badge/scoring-0--1000-orange)
 
 </div>
@@ -33,12 +37,12 @@ No chess library. No borrowed engine. Every rule, every search, every evaluation
 
 ## What It Is
 
-Show QiSheng any Xiangqi position. It answers with **one number from 0 to 1000** — how good
+Show XuanWu any Xiangqi position. It answers with **one number from 0 to 1000** — how good
 that position is for Red — and the move it would play.
 
 ```mermaid
 flowchart LR
-    P["♟ Any position"] --> Q(("QiSheng"))
+    P["♟ Any position"] --> Q(("XuanWu"))
     Q --> S["Score 0–1000"]
     Q --> M["Best move"]
     style Q fill:#c62828,stroke:#7f0000,color:#fff
@@ -74,7 +78,7 @@ be replaced by a neural network without touching search.
 
 ```mermaid
 flowchart TD
-    R(("QiSheng<br/>strengths"))
+    R(("XuanWu<br/>strengths"))
     R --- A["🎯 <b>Provably correct rules</b><br/>perft 44 / 1,920 / 79,666 — exact match"]
     R --- B["🔍 <b>No horizon blindness</b><br/>a trap scoring 610 without quiescence<br/>is correctly seen as 481"]
     R --- C["📚 <b>Trained on 16M positions</b><br/>labeled by Pikafish at depth 10,<br/>never by itself"]
@@ -142,7 +146,7 @@ flowchart LR
 ```
 
 The web board is the finish line: an interactive position, a live evaluation bar, and an arrow
-pointing at the move QiSheng would play.
+pointing at the move XuanWu would play.
 
 ## Try It
 

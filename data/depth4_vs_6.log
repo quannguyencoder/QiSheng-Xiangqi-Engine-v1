@@ -1,0 +1,4 @@
+A = tron 60% thu cong + 40% mang (nnue_tanh.npz)
+B = tron 60% thu cong + 40% mang (nnue_tanh.npz)
+10 van, A depth 4 vs B depth 6, tu 5 the co khai cuoc khac nhau
+

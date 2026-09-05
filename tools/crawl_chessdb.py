@@ -1,5 +1,5 @@
 """
-QiSheng - CRAWLER CHI LAY DU LIEU TU BEN NGOAI (chessdb.cn).
+XuanWu - CRAWLER CHI LAY DU LIEU TU BEN NGOAI (chessdb.cn).
 TUYET DOI khong tu sinh nhan: moi mau deu co source="chessdb".
 The co nao chessdb tra ve "unknown" thi BO QUA, khong tu cham diem.
 

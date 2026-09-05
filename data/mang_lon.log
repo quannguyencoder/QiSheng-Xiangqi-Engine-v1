@@ -1,0 +1,75 @@
+[21:17:44] === MANG LON: tich luy 512, an 64, thang tanh ===
+Doc du lieu...
+Tinh lai nhan theo thang tanh(cp/1600)
+  data/data_pikafish_s0.jsonl: tong 363,424 mau
+  data/data_pikafish_s1.jsonl: tong 1,696,758 mau
+  data/data_pikafish_s10.jsonl: tong 1,866,758 mau
+  data/data_pikafish_s11.jsonl: tong 2,036,758 mau
+  data/data_pikafish_s12.jsonl: tong 2,068,758 mau
+  data/data_pikafish_s13.jsonl: tong 2,100,758 mau
+  data/data_pikafish_s14.jsonl: tong 2,132,758 mau
+  data/data_pikafish_s15.jsonl: tong 2,164,758 mau
+  data/data_pikafish_s16.jsonl: tong 3,504,758 mau
+  data/data_pikafish_s17.jsonl: tong 4,844,758 mau
+  data/data_pikafish_s18.jsonl: tong 6,184,758 mau
+  data/data_pikafish_s19.jsonl: tong 7,524,758 mau
+  data/data_pikafish_s2.jsonl: tong 8,858,092 mau
+  data/data_pikafish_s20.jsonl: tong 10,198,092 mau
+  data/data_pikafish_s21.jsonl: tong 11,538,092 mau
+  data/data_pikafish_s22.jsonl: tong 11,555,695 mau
+  data/data_pikafish_s3.jsonl: tong 12,872,749 mau
+  data/data_pikafish_s4.jsonl: tong 14,206,083 mau
+  data/data_pikafish_s5.jsonl: tong 14,997,188 mau
+  data/data_pikafish_s6.jsonl: tong 15,397,188 mau
+  data/data_pikafish_s7.jsonl: tong 15,797,188 mau
+  data/data_pikafish_s8.jsonl: tong 15,967,188 mau
+  data/data_pikafish_s9.jsonl: tong 16,137,188 mau
+  data/data_crawl_s0.jsonl: tong 16,140,921 mau
+  data/data_crawl_s1.jsonl: tong 16,144,644 mau
+  data/data_crawl_s2.jsonl: tong 16,148,393 mau
+  data/data_crawl_s3.jsonl: tong 16,152,083 mau
+  data/data_crawl_s4.jsonl: tong 16,155,806 mau
+  data/data_crawl_s5.jsonl: tong 16,159,583 mau
+  data/data_openings_chessdb.jsonl: tong 16,164,880 mau
+  data/training_set.jsonl: tong 16,202,299 mau
+Dung 16,000,000 mau doc nhat
+Trich dac trung (mot lan duy nhat)...
+  1,000,000/16,000,000 (11s)
+  2,000,000/16,000,000 (23s)
+  3,000,000/16,000,000 (35s)
+  4,000,000/16,000,000 (45s)
+  5,000,000/16,000,000 (56s)
+  6,000,000/16,000,000 (69s)
+  7,000,000/16,000,000 (83s)
+  8,000,000/16,000,000 (95s)
+  9,000,000/16,000,000 (108s)
+  10,000,000/16,000,000 (120s)
+  11,000,000/16,000,000 (132s)
+  12,000,000/16,000,000 (142s)
+  13,000,000/16,000,000 (153s)
+  14,000,000/16,000,000 (163s)
+  15,000,000/16,000,000 (173s)
+  16,000,000/16,000,000 (183s)
+Xong: 186s, 2.70 GB
+train 15,200,000 | val 800,000
+Mang NNUE: 678,593 tham so (CNN cu: 797.313)
+Epoch  1: train 0.00437 val 0.00363  (RMSE 60 diem, 95s) *
+Epoch  2: train 0.00346 val 0.00339  (RMSE 58 diem, 85s) *
+Epoch  3: train 0.00322 val 0.00323  (RMSE 57 diem, 90s) *
+Epoch  4: train 0.00306 val 0.00313  (RMSE 56 diem, 94s) *
+Epoch  5: train 0.00293 val 0.00310  (RMSE 56 diem, 84s) *
+Epoch  6: train 0.00284 val 0.00307  (RMSE 55 diem, 76s) *
+Epoch  7: train 0.00277 val 0.00300  (RMSE 55 diem, 87s) *
+Epoch  8: train 0.00271 val 0.00297  (RMSE 55 diem, 69s) *
+Epoch  9: train 0.00266 val 0.00296  (RMSE 54 diem, 48s) *
+Epoch 10: train 0.00263 val 0.00297  (RMSE 55 diem, 4591s)
+Tot nhat: val 0.00296 (RMSE 54 diem) -> weights/nnue_lon.pt
+Da xuat weights/nnue_lon.pt -> weights/nnue_lon.npz (2.6 MB)
+Doi chieu PyTorch vs NumPy tren 60 the co: lech lon nhat 0.49 diem -> KHOP
+Doi chieu tang dan vs tinh lai: lech lon nhat 0.000003 -> KHOP
+[23:07:36] === DAU: mang lon vs thu cong, depth 1, 48 van ===
+A duoc 21.5/48 = 44.8% (18 thang, 7 hoa, 23 thua)
+Thoi gian: 256.4 phut
+Sai so chuan: +/-7.2 diem phan tram
+Chenh lech Elo cua A so voi B: -36 (khoang tin cay 95%: -141 den +62)
+[03:24:02] === XONG MANG LON ===
