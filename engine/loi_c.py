@@ -55,6 +55,11 @@ def _nap() -> Optional[ctypes.CDLL]:
     lib.xw_tim_kiem.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int,
                                 ctypes.POINTER(ctypes.c_int),
                                 ctypes.POINTER(ctypes.c_longlong)]
+    lib.xw_tim_kiem_theo_gio.restype = ctypes.c_int
+    lib.xw_tim_kiem_theo_gio.argtypes = [
+        ctypes.c_char_p, ctypes.c_int, ctypes.c_double, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_longlong),
+        ctypes.POINTER(ctypes.c_int)]
     lib.xw_tim_kiem_khoi_tao.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xw_dat_keo_dai.argtypes = [ctypes.c_int]
     lib.xw_dat_theo_pha.argtypes = [ctypes.c_int, ctypes.c_double,
@@ -202,3 +207,24 @@ def dat_theo_pha(bat: bool, w_khai: float = 0.8, w_trung: float = 0.8,
 def dat_keo_dai(bat: bool) -> None:
     """Bat/tat keo dai mot tang khi nuoc di gay chieu."""
     _nap().xw_dat_keo_dai(1 if bat else 0)
+
+
+_do_sau_ra = ctypes.c_int()
+
+
+def tim_kiem_theo_gio(board: Board, side: str, giay: float = 10.0,
+                      do_sau_max: int = 30):
+    """Tim kiem trong ngan sach thoi gian cho truoc.
+
+    Chay iterative deepening cho toi khi het gio, tra ve nuoc tot nhat cua VONG
+    CUOI DA HOAN THANH - vong dang do bi bo vi ket qua chua tin duoc.
+
+    Tra ve (diem, nuoc di, so nut, do sau dat duoc).
+    """
+    ma = _nap().xw_tim_kiem_theo_gio(
+        _sang_c(board), 1 if side == WHITE else 0,
+        ctypes.c_double(giay), do_sau_max,
+        ctypes.byref(_diem_ra), ctypes.byref(_nut_ra),
+        ctypes.byref(_do_sau_ra))
+    nuoc = None if ma < 0 else _GIAI_MA[ma]
+    return _diem_ra.value, nuoc, _nut_ra.value, _do_sau_ra.value

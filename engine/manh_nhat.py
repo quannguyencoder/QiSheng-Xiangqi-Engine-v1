@@ -54,6 +54,33 @@ def san_sang() -> bool:
     return chuan_bi()
 
 
+def tim_nuoc_di_theo_gio(board: Board, side_to_move: str, giay: float = 10.0,
+                         dung_sach: bool = True):
+    """Tim nuoc di trong NGAN SACH THOI GIAN - dung cho web.
+
+    Vi sao khong dat do sau co dinh: cung 10 giay, the co tan cuoc di duoc
+    depth 15 con the co khai cuoc phuc tap chi depth 11. Dat co dinh thi hoac
+    phi thoi gian, hoac vuot gio. Do duoc voi ngan sach 10 giay:
+        the co khoi dau  depth 11
+        khai cuoc        depth 12-13
+        trung cuoc       depth 11-12
+        tan cuoc         depth 12-15
+
+    Tra ve (diem, nuoc di, so nut, do sau dat duoc).
+    """
+    if dung_sach:
+        from engine import sach
+        from engine.search import board_hash
+        mv = sach.tra_sach(board, side_to_move, board_hash(board, side_to_move))
+        if mv is not None:
+            return 505, mv, 0, 0
+    if chuan_bi():
+        return loi_c.tim_kiem_theo_gio(board, side_to_move, giay)
+    # Duong du phong Python: khong do gio duoc, dung do sau vua phai
+    diem, mv, nut = tim_nuoc_di(board, side_to_move, depth=4, dung_sach=False)
+    return diem, mv, nut, 4
+
+
 def tim_nuoc_di(board: Board, side_to_move: str, depth: int = 8,
                 dung_sach: bool = True) -> Tuple[int, Optional[Move], int]:
     """Tra ve (diem 0..1000 goc nhin Trang, nuoc di tot nhat, so nut da xet)."""

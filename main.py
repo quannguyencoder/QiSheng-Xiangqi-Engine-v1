@@ -33,6 +33,9 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Phan tich the co tuong")
     p.add_argument("fen", nargs="?", help="FEN cua the co (bo trong = the co khoi dau)")
     p.add_argument("--depth", type=int, default=1, help="Do sau tim kiem")
+    p.add_argument("--giay", type=float, default=None,
+                   help="Ngan sach thoi gian moi nuoc (giay). Dung voi --manh-nhat. "
+                        "Tim sau nhat co the trong ngan sach do.")
     p.add_argument("--manh-nhat", action="store_true",
                    help="Cau hinh MANH NHAT: tim kiem + danh gia chay trong C, "
                         "kem sach khai cuoc. depth 8 mat 0,7 giay.")
@@ -86,11 +89,15 @@ def main() -> None:
         print_board(board)
         print(f"\nBen di: {'Trang' if side == WHITE else 'Den'}")
         t = time.perf_counter()
-        diem, nuoc, nut = manh_nhat.tim_nuoc_di(board, side, depth=args.depth)
+        if args.giay:
+            diem, nuoc, nut, ds = manh_nhat.tim_nuoc_di_theo_gio(board, side, args.giay)
+        else:
+            diem, nuoc, nut = manh_nhat.tim_nuoc_di(board, side, depth=args.depth)
+            ds = args.depth
         dt = time.perf_counter() - t
         cach = "loi C" if manh_nhat.san_sang() else "Python thuan"
         print(f"Danh gia: tron 60/40 ({cach})")
-        print(f"Diem sau tim kiem depth={args.depth}: {diem} | nuoc di tot nhat: {nuoc}")
+        print(f"Diem sau tim kiem depth={ds}: {diem} | nuoc di tot nhat: {nuoc}")
         print(f"Thoi gian: {dt:.3f}s | so nut: {nut:,}")
         return
 

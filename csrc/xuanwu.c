@@ -437,6 +437,7 @@ unsigned long long xw_bam(const char *b, int trang) {
 
 #include <math.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #define NNUE_DAC_TRUNG 1260
 
@@ -665,6 +666,23 @@ static int *HISTORY = 0;         /* [o_di * 90 + o_den] */
 static double TRONG_SO_MANG = 0.4, LECH_HIEU_CHINH = 0.0;
 static long long SO_NUT = 0;
 
+/* --- Gioi han thoi gian ---
+ * Web can moi nuoc di ra trong mot ngan sach co dinh. Dat do sau co dinh thi
+ * hoac phi thoi gian o the co don gian, hoac vuot gio o the co phuc tap.
+ * Nen chay iterative deepening cho toi khi het gio, roi tra ve nuoc tot nhat
+ * cua VONG CUOI DA HOAN THANH - vong dang do bi bo di vi ket qua chua tin duoc.
+ */
+static double HAN_GIO = 0.0;        /* 0 = khong gioi han */
+static double BAT_DAU_GIO = 0.0;
+static double NGAN_SACH = 0.0;
+static int HET_GIO = 0;
+
+static double gio_hien_tai(void) {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return tv.tv_sec + tv.tv_usec / 1e6;
+}
+
 static const short GIA_TRI_AN[7] = {900, 400, 200, 200, 0, 450, 100};
 
 void xw_tim_kiem_khoi_tao(double trong_so, double lech) {
@@ -845,6 +863,11 @@ static void ghi_cat_tia(const char *b, int mv, int ply, int do_sau) {
 static int tim(char *b, int trang, int do_sau, int alpha, int beta,
                int ply, int cho_bo_luot, int *nuoc_ra) {
     SO_NUT++;
+    /* Kiem tra gio moi 4096 nut: goi gettimeofday o moi nut se ton hon ca
+       phan tim kiem. */
+    if (HAN_GIO > 0.0 && (SO_NUT & 1023) == 0 && gio_hien_tai() > HAN_GIO)
+        HET_GIO = 1;
+    if (HET_GIO) return trang ? DIEM_MIN : DIEM_MAX;   /* thoat ngay, ket qua bo di */
     int alpha_goc = alpha, beta_goc = beta;
     unsigned long long khoa = xw_bam(b, trang);
     TTMuc *muc = &TT[khoa & (TT_SO - 1)];
@@ -980,7 +1003,35 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
 }
 
 /* Diem tra ve qua *diem, nuoc di la gia tri tra ve. -1 neu khong co nuoc nao. */
+static int xw_tim_kiem_noi_bo(const char *b_in, int trang, int do_sau,
+                              int *diem, long long *so_nut, int *do_sau_dat);
+
+/* Tim kiem co gioi han thoi gian (giay). do_sau_max la tran an toan.
+   Tra ve nuoc di; do sau thuc su dat duoc tra qua *do_sau_dat. */
+int xw_tim_kiem_theo_gio(const char *b_in, int trang, double giay, int do_sau_max,
+                         int *diem, long long *so_nut, int *do_sau_dat) {
+    BAT_DAU_GIO = gio_hien_tai();
+    HAN_GIO = BAT_DAU_GIO + giay;
+    NGAN_SACH = giay;
+    HET_GIO = 0;
+    int d_dat = 0;
+    int nuoc = xw_tim_kiem_noi_bo(b_in, trang, do_sau_max, diem, so_nut, &d_dat);
+    HAN_GIO = 0.0;
+    NGAN_SACH = 0.0;
+    HET_GIO = 0;
+    if (do_sau_dat) *do_sau_dat = d_dat;
+    return nuoc;
+}
+
 int xw_tim_kiem(const char *b_in, int trang, int do_sau, int *diem, long long *so_nut) {
+    HAN_GIO = 0.0;
+    NGAN_SACH = 0.0;
+    HET_GIO = 0;
+    return xw_tim_kiem_noi_bo(b_in, trang, do_sau, diem, so_nut, 0);
+}
+
+static int xw_tim_kiem_noi_bo(const char *b_in, int trang, int do_sau,
+                              int *diem, long long *so_nut, int *do_sau_dat) {
     char b[90];
     memcpy(b, b_in, 90);
     if (!TT) xw_tim_kiem_khoi_tao(TRONG_SO_MANG, LECH_HIEU_CHINH);
@@ -989,6 +1040,7 @@ int xw_tim_kiem(const char *b_in, int trang, int do_sau, int *diem, long long *s
     if (ACC_STACK) acc_tu_dau(b, acc_o(0));
     SO_NUT = 0;
     int nuoc = -1, d_cuoi = 500;
+    double vong_truoc = 0.0;
     /* --- Iterative deepening kem ASPIRATION WINDOW ---
      * Diem cua vong sau thuong rat gan diem vong truoc. Nen thay vi tim voi
      * cua so day du [0, 1000], ta tim voi cua so hep quanh diem cu. Cua so hep
@@ -996,6 +1048,16 @@ int xw_tim_kiem(const char *b_in, int trang, int do_sau, int *diem, long long *s
      * (fail high/low) thi noi rong ra tim lai - it khi xay ra nen van loi.
      */
     for (int d = 1; d <= do_sau; d++) {
+        /* Chi bat dau vong moi neu du doan no KIP. Moi vong sau ton khoang
+           2,6 lan vong truoc (he so nhanh hieu dung do duoc). Dung thoi gian
+           vong vua roi de uoc luong, chinh xac hon la lay ti le co dinh cua
+           ngan sach - nho vay tan dung duoc gan het thoi gian cho phep. */
+        double da_dung = gio_hien_tai() - BAT_DAU_GIO;
+        if (NGAN_SACH > 0.0 && d > 1) {
+            double du_doan = vong_truoc * 2.6;
+            if (da_dung + du_doan > NGAN_SACH) break;
+        }
+        double bat_dau_vong = gio_hien_tai();
         int n_tmp = -1;
         if (d <= 3) {
             d_cuoi = tim(b, trang, d, DIEM_MIN, DIEM_MAX, 0, 1, &n_tmp);
@@ -1014,7 +1076,10 @@ int xw_tim_kiem(const char *b_in, int trang, int do_sau, int *diem, long long *s
                 if (rong > 1000) { a = DIEM_MIN; be = DIEM_MAX; }
             }
         }
+        if (HET_GIO) break;          /* vong nay chua xong -> bo, giu vong truoc */
+        vong_truoc = gio_hien_tai() - bat_dau_vong;
         if (n_tmp >= 0) nuoc = n_tmp;
+        if (do_sau_dat) *do_sau_dat = d;
     }
     if (diem) *diem = d_cuoi;
     if (so_nut) *so_nut = SO_NUT;
