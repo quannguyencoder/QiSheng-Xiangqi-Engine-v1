@@ -48,12 +48,16 @@ def main() -> None:
     from engine.search import set_evaluator
     if args.tron is not None:
         # Cau hinh MANH NHAT do duoc: tron ham thu cong voi mang NNUE.
-        # Do doi khang 48 van cho thay tron 50/50 manh hon ham thu cong thuan
-        # +104 Elo (khoang tin cay 95%: +7 den +221), va manh hon ca mang thuan.
-        from engine.evaluate import evaluate as thu_cong
-        from engine.ket_hop import tao_ham_tron
-        from engine.nnue_net import MangNnue
-        set_evaluator(tao_ham_tron(thu_cong, MangNnue(args.mang).evaluate, args.tron))
+        # Do doi khang cho thay tron manh hon ham thu cong thuan +243 Elo va
+        # manh hon mang thuan +301 Elo.
+        from engine.ket_hop import tao_ham_tron, tao_ham_tron_c
+        ham = tao_ham_tron_c(args.mang, args.tron)      # duong C: 2,91 us
+        if ham is None:                                  # khong co thu vien C
+            from engine.evaluate import evaluate as thu_cong
+            from engine.nnue_net import MangNnue
+            ham = tao_ham_tron(thu_cong, MangNnue(args.mang).evaluate, args.tron)
+            print("(khong co thu vien C - chay bang Python, cham hon ~6,6 lan)")
+        set_evaluator(ham)
         print(f"Danh gia: tron {int((1-args.tron)*100)}% thu cong "
               f"+ {int(args.tron*100)}% mang ({args.mang})")
     elif args.mang_thuan:

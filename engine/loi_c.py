@@ -50,6 +50,15 @@ def _nap() -> Optional[ctypes.CDLL]:
                                  ctypes.POINTER(ctypes.c_int)]
     lib.qs_bi_chieu.restype = ctypes.c_int
     lib.qs_bi_chieu.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    F = ctypes.POINTER(ctypes.c_float)
+    lib.qs_nnue_nap.restype = ctypes.c_int
+    lib.qs_nnue_nap.argtypes = [F, F, F, F, F, ctypes.c_float,
+                                ctypes.c_int, ctypes.c_int]
+    lib.qs_nnue_danh_gia.restype = ctypes.c_int
+    lib.qs_nnue_danh_gia.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.qs_danh_gia_tron.restype = ctypes.c_int
+    lib.qs_danh_gia_tron.argtypes = [ctypes.c_char_p, ctypes.c_int,
+                                     ctypes.c_double, ctypes.c_double]
     lib.qs_dac_trung.restype = ctypes.c_int
     lib.qs_dac_trung.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
     lib.qs_bam.restype = ctypes.c_ulonglong
@@ -120,3 +129,40 @@ def dac_trung(board: Board):
 
 def bam(board: Board, side: str) -> int:
     return int(_nap().qs_bam(_sang_c(board), 1 if side == WHITE else 0))
+
+
+_da_nap_mang = False
+
+
+def nap_mang(w1, b1, w2, b2, w3, b3) -> bool:
+    """Nap trong so mang NNUE vao C. Cac mang phai lien tuc va la float32."""
+    import numpy as np
+    global _da_nap_mang
+    lib = _nap()
+    if lib is None:
+        return False
+    F = ctypes.POINTER(ctypes.c_float)
+    def p(a):
+        return np.ascontiguousarray(a, dtype=np.float32).ctypes.data_as(F)
+    # Giu tham chieu de NumPy khong thu hoi bo nho truoc khi C chep xong
+    giu = [np.ascontiguousarray(x, dtype=np.float32) for x in (w1, b1, w2, b2, w3)]
+    ok = lib.qs_nnue_nap(giu[0].ctypes.data_as(F), giu[1].ctypes.data_as(F),
+                         giu[2].ctypes.data_as(F), giu[3].ctypes.data_as(F),
+                         giu[4].ctypes.data_as(F), ctypes.c_float(float(b3)),
+                         int(w1.shape[1]), int(w2.shape[1]))
+    _da_nap_mang = bool(ok)
+    return _da_nap_mang
+
+
+def da_nap_mang() -> bool:
+    return _da_nap_mang
+
+
+def nnue_danh_gia(board: Board, side: str) -> int:
+    return _nap().qs_nnue_danh_gia(_sang_c(board), 1 if side == WHITE else 0)
+
+
+def danh_gia_tron(board: Board, side: str, trong_so: float, lech: float) -> int:
+    """Ham danh gia hoan chinh: thu cong + mang + tron, mot lan goi duy nhat."""
+    return _nap().qs_danh_gia_tron(_sang_c(board), 1 if side == WHITE else 0,
+                                   trong_so, lech)

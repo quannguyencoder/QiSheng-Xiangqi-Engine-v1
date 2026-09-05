@@ -359,3 +359,115 @@ unsigned long long qs_bam(const char *b, int trang) {
     if (!trang) h ^= ZOB_DEN;
     return h;
 }
+
+/* ==========================================================================
+ * Mang NNUE va ham danh gia tron, tinh tron ven trong C.
+ *
+ * Vi sao: mang chi co 1260->256->32->1, khoang 9.000 phep nhan cong, trong C
+ * mat ~2-3 us. Nhung NumPy phai goi 6 lenh nho lien tiep, moi lenh ton 1-5 us
+ * CHI PHI GOI bat ke phep tinh to hay nho - thanh ra ~30 us cho viec dang le
+ * 3 us. Do la cho lang phi lon nhat con lai sau khi da chuyen 4 phan sang C.
+ *
+ * Gop luon ham tron vao day: mot lan goi tra ve diem cuoi cung, thay vi Python
+ * goi ham thu cong roi goi mang roi tron - ba lan qua cau noi.
+ * ========================================================================== */
+
+#include <math.h>
+#include <stdlib.h>
+
+#define NNUE_DAC_TRUNG 1260
+
+static float *W1 = 0, *B1 = 0, *W2 = 0, *B2 = 0, *W3 = 0;
+static float B3 = 0.0f;
+static int SO_TICH_LUY = 0, SO_AN = 0;
+static float *ACC = 0, *H2 = 0;
+
+/* Nap trong so tu Python. w1 xep theo [dac_trung][no_ron], w2 theo [vao][ra]. */
+int qs_nnue_nap(const float *w1, const float *b1,
+                const float *w2, const float *b2,
+                const float *w3, float b3,
+                int so_tich_luy, int so_an) {
+    free(W1); free(B1); free(W2); free(B2); free(W3); free(ACC); free(H2);
+    SO_TICH_LUY = so_tich_luy; SO_AN = so_an;
+    W1 = (float *)malloc(sizeof(float) * NNUE_DAC_TRUNG * so_tich_luy);
+    B1 = (float *)malloc(sizeof(float) * so_tich_luy);
+    W2 = (float *)malloc(sizeof(float) * (so_tich_luy + 1) * so_an);
+    B2 = (float *)malloc(sizeof(float) * so_an);
+    W3 = (float *)malloc(sizeof(float) * so_an);
+    ACC = (float *)malloc(sizeof(float) * so_tich_luy);
+    H2 = (float *)malloc(sizeof(float) * so_an);
+    if (!W1 || !B1 || !W2 || !B2 || !W3 || !ACC || !H2) return 0;
+    for (int i = 0; i < NNUE_DAC_TRUNG * so_tich_luy; i++) W1[i] = w1[i];
+    for (int i = 0; i < so_tich_luy; i++) B1[i] = b1[i];
+    for (int i = 0; i < (so_tich_luy + 1) * so_an; i++) W2[i] = w2[i];
+    for (int i = 0; i < so_an; i++) B2[i] = b2[i];
+    for (int i = 0; i < so_an; i++) W3[i] = w3[i];
+    B3 = b3;
+    return 1;
+}
+
+static inline float kep01(float x) { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
+
+/* Tra ve xac suat thang cua Trang (0..1) theo mang. */
+static float nnue_tho(const char *b, int trang) {
+    const int n = SO_TICH_LUY, m = SO_AN;
+    for (int i = 0; i < n; i++) ACC[i] = B1[i];
+    /* Cong don cot trong so cua tung quan dang co tren ban */
+    for (int sq = 0; sq < 90; sq++) {
+        char p = b[sq];
+        if (p == '.') continue;
+        int k = chi_so_nnue(p);
+        if (k < 0) continue;
+        const float *cot = W1 + (size_t)(k * 90 + sq) * n;
+        for (int i = 0; i < n; i++) ACC[i] += cot[i];
+    }
+    for (int j = 0; j < m; j++) H2[j] = B2[j];
+    for (int i = 0; i < n; i++) {
+        float a = kep01(ACC[i]);
+        if (a == 0.0f) continue;
+        const float *hang = W2 + (size_t)i * m;
+        for (int j = 0; j < m; j++) H2[j] += a * hang[j];
+    }
+    if (trang) {                       /* bit "ben di" la dac trung cuoi cung */
+        const float *hang = W2 + (size_t)n * m;
+        for (int j = 0; j < m; j++) H2[j] += hang[j];
+    }
+    float out = B3;
+    for (int j = 0; j < m; j++) out += kep01(H2[j]) * W3[j];
+    return 1.0f / (1.0f + expf(-out));
+}
+
+/* Quy doi diem tho -> thang 0..1000, giong engine/scoring.py */
+#define MATERIAL_SCALE 1600.0
+#define TEMPO 5.0
+
+static int quy_doi(double tho, int trang) {
+    double v = tanh(tho / MATERIAL_SCALE) * (500.0 - TEMPO);
+    double d = 500.0 + v + (trang ? TEMPO : -TEMPO);
+    long r = lround(d);
+    if (r < 1) r = 1;
+    if (r > 999) r = 999;
+    return (int)r;
+}
+
+/* Danh gia TRON: (1-w) * thu cong + w * mang + lech, tat ca trong mot lan goi. */
+int qs_danh_gia_tron(const char *b, int trang, double trong_so_mang, double lech) {
+    int a = quy_doi((double)qs_danh_gia_tho(b), trang);
+    double bnn = (double)nnue_tho(b, trang) * 1000.0;
+    if (bnn < 1.0) bnn = 1.0;
+    if (bnn > 999.0) bnn = 999.0;
+    double d = (1.0 - trong_so_mang) * a + trong_so_mang * bnn + lech;
+    long r = lround(d);
+    if (r < 1) r = 1;
+    if (r > 999) r = 999;
+    return (int)r;
+}
+
+/* Chi mang, dung de doi chieu voi ban NumPy */
+int qs_nnue_danh_gia(const char *b, int trang) {
+    double v = (double)nnue_tho(b, trang) * 1000.0;
+    long r = lround(v);
+    if (r < 1) r = 1;
+    if (r > 999) r = 999;
+    return (int)r;
+}

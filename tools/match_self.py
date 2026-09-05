@@ -50,6 +50,14 @@ def tao_ham_danh_gia(spec: str):
             return ev.evaluate(b, s)
         return (tao_ham_tron(thu_cong_nhanh, MangNnue(duong).evaluate, tso),
                 f"tron {int((1-tso)*100)}/{int(tso*100)} KHONG co dong")
+    if kieu == "tron-c":
+        # Duong nhanh: ca ham thu cong, mang, va tron deu chay trong C.
+        duong, _, w = path.rpartition(":")
+        from engine.ket_hop import tao_ham_tron_c
+        f = tao_ham_tron_c(duong, float(w))
+        if f is None:
+            raise SystemExit("Khong co thu vien C - chay csrc/build.sh truoc")
+        return f, f"tron {int((1-float(w))*100)}/{int(float(w)*100)} (C)"
     if kieu == "tron":
         # tron:<duong dan mang>:<trong so>   vi du tron:weights/x.npz:0.5
         duong, _, w = path.rpartition(":")
