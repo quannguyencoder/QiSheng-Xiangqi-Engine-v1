@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.png" alt="XuanWu" width="180">
+
 # XuanWu — Xiangqi Engine v1
 
 **玄武 · The Black Tortoise**
