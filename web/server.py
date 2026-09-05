@@ -29,8 +29,8 @@ THU_MUC = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(THU_MUC))
 
 from engine.board import WHITE, BLACK, start_board
-from engine.luat_van import VanCo, DANG_CHOI
-from engine import manh_nhat
+from engine.game_rules import VanCo, DANG_CHOI
+from engine import strongest
 from tools.collect_openings import board_to_fen
 
 CONG = 8000
@@ -64,7 +64,7 @@ def _cham_diem(v: VanCo, giay: float = 0.3):
         return 0
     if tt == "hoa":
         return 500
-    diem, _, _, _ = manh_nhat.tim_nuoc_di_theo_gio(v.board, v.side, giay,
+    diem, _, _, _ = strongest.tim_nuoc_di_theo_gio(v.board, v.side, giay,
                                                    dung_sach=False)
     return diem
 
@@ -140,7 +140,7 @@ class May(http.server.SimpleHTTPRequestHandler):
         # 2. May tra loi
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
         t0 = time.time()
-        diem, nuoc_may, nut, do_sau = manh_nhat.tim_nuoc_di_theo_gio(
+        diem, nuoc_may, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
             v.board, v.side, giay)
         if nuoc_may is None:
             return self._tra({**_ban_co_json(v), "diem": _cham_diem(v),
@@ -165,7 +165,7 @@ class May(http.server.SimpleHTTPRequestHandler):
         if tt != DANG_CHOI:
             return self._tra({"nuoc": None, "diem": _cham_diem(v)})
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
-        diem, nuoc, nut, do_sau = manh_nhat.tim_nuoc_di_theo_gio(
+        diem, nuoc, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
             v.board, v.side, giay)
         return self._tra({
             "nuoc": list(nuoc) if nuoc else None,
@@ -183,10 +183,10 @@ class May(http.server.SimpleHTTPRequestHandler):
 
 def main():
     print("XuanWu - dang khoi dong...")
-    ok = manh_nhat.chuan_bi()
+    ok = strongest.chuan_bi()
     print(f"  engine: {'loi C' if ok else 'Python thuan (cham hon)'}")
-    from engine import sach
-    print(f"  sach khai cuoc: {sach.so_muc():,} the co" if sach.nap()
+    from engine import book
+    print(f"  sach khai cuoc: {book.so_muc():,} the co" if book.nap()
           else "  sach khai cuoc: khong co")
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("127.0.0.1", CONG), May) as may:

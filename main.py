@@ -56,7 +56,7 @@ def main() -> None:
         # Cau hinh MANH NHAT do duoc: tron ham thu cong voi mang NNUE.
         # Do doi khang cho thay tron manh hon ham thu cong thuan +243 Elo va
         # manh hon mang thuan +301 Elo.
-        from engine.ket_hop import tao_ham_tron, tao_ham_tron_c
+        from engine.blend import tao_ham_tron, tao_ham_tron_c
         ham = tao_ham_tron_c(args.mang, args.tron)      # duong C: 2,91 us
         if ham is None:                                  # khong co thu vien C
             from engine.evaluate import evaluate as thu_cong
@@ -85,17 +85,17 @@ def main() -> None:
     if args.manh_nhat:
         # Cau hinh manh nhat: tim kiem + danh gia deu chay trong C.
         import time
-        from engine import manh_nhat
+        from engine import strongest
         print_board(board)
         print(f"\nBen di: {'Trang' if side == WHITE else 'Den'}")
         t = time.perf_counter()
         if args.giay:
-            diem, nuoc, nut, ds = manh_nhat.tim_nuoc_di_theo_gio(board, side, args.giay)
+            diem, nuoc, nut, ds = strongest.tim_nuoc_di_theo_gio(board, side, args.giay)
         else:
-            diem, nuoc, nut = manh_nhat.tim_nuoc_di(board, side, depth=args.depth)
+            diem, nuoc, nut = strongest.tim_nuoc_di(board, side, depth=args.depth)
             ds = args.depth
         dt = time.perf_counter() - t
-        cach = "loi C" if manh_nhat.san_sang() else "Python thuan"
+        cach = "loi C" if strongest.san_sang() else "Python thuan"
         print(f"Danh gia: tron 60/40 ({cach})")
         print(f"Diem sau tim kiem depth={ds}: {diem} | nuoc di tot nhat: {nuoc}")
         print(f"Thoi gian: {dt:.3f}s | so nut: {nut:,}")

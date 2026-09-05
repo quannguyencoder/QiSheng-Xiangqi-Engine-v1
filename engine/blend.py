@@ -63,15 +63,15 @@ def tao_ham_tron_c(duong_mang: str, trong_so_mang: float = 0.4):
     Tra ve None neu khong dung duoc (khong co thu vien C hoac nap mang loi),
     de ben goi tu quay ve duong Python.
     """
-    from engine import loi_c
+    from engine import c_core
     from engine.board import start_board
     from engine.evaluate import evaluate as thu_cong
     from engine.nnue_net import MangNnue
 
-    if not loi_c.co_loi_c():
+    if not c_core.co_loi_c():
         return None
     net = MangNnue(duong_mang)
-    if not loi_c.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3):
+    if not c_core.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3):
         return None
 
     w = max(0.0, min(1.0, trong_so_mang))
@@ -81,6 +81,6 @@ def tao_ham_tron_c(duong_mang: str, trong_so_mang: float = 0.4):
     lech = 505.0 - tho
 
     def danh_gia(board, side_to_move: str) -> int:
-        return loi_c.danh_gia_tron(board, side_to_move, w, lech)
+        return c_core.danh_gia_tron(board, side_to_move, w, lech)
 
     return danh_gia

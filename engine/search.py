@@ -22,14 +22,14 @@ from engine.board import (
     Board, Move, WHITE, BLACK, legal_moves as _legal_py,
     pseudo_legal_moves, make_move, in_check as _in_check_py,
 )
-from engine import loi_c
+from engine import c_core
 
 # Dung phan loi viet bang C neu bien dich duoc (nhanh 29,5x cho sinh nuoc di),
 # nguoc lai chay tiep bang Python thuan. Ca hai da doi chieu 3.000 truong hop
 # khong lech va perft khop chuan 44/1.920/79.666.
-if loi_c.co_loi_c():
-    legal_moves = loi_c.nuoc_di_hop_le
-    in_check = loi_c.bi_chieu
+if c_core.co_loi_c():
+    legal_moves = c_core.nuoc_di_hop_le
+    in_check = c_core.bi_chieu
 else:
     legal_moves = _legal_py
     in_check = _in_check_py
@@ -70,7 +70,7 @@ _MATE_MARGIN = 50        # khong luu vao TT cac diem sat bien (diem chieu het)
 
 def _nap_zobrist_vao_c() -> bool:
     """Day bang Zobrist cua Python sang C de hai ben cho cung ma bam."""
-    if not loi_c.co_loi_c():
+    if not c_core.co_loi_c():
         return False
     thu_tu = "RHEAKCPrheakcp"
     bang = []
@@ -78,7 +78,7 @@ def _nap_zobrist_vao_c() -> bool:
         for r in range(10):
             for c in range(9):
                 bang.append(ZOBRIST[p][r][c])
-    loi_c.nap_zobrist(bang, ZOBRIST_BLACK_TO_MOVE)
+    c_core.nap_zobrist(bang, ZOBRIST_BLACK_TO_MOVE)
     return True
 
 
@@ -87,7 +87,7 @@ _BAM_BANG_C = _nap_zobrist_vao_c()
 
 def board_hash(board: Board, side_to_move: str) -> int:
     if _BAM_BANG_C:
-        return loi_c.bam(board, side_to_move)
+        return c_core.bam(board, side_to_move)
     h = 0
     for r in range(10):
         row = board[r]
@@ -420,8 +420,8 @@ def evaluate_current_position(board: Board, side_to_move: str,
     # trung cuoc. Chi dung khi dung_sach = True de cac phep do doi khang van
     # so sanh dung phan search.
     if dung_sach:
-        from engine import sach
-        mv_sach = sach.tra_sach(board, side_to_move,
+        from engine import book
+        mv_sach = book.tra_sach(board, side_to_move,
                                 board_hash(board, side_to_move))
         if mv_sach is not None:
             return NEUTRAL_TU_SACH, mv_sach

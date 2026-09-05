@@ -23,7 +23,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
-from engine import loi_c
+from engine import c_core
 from engine.evaluate import evaluate as thu_cong
 from engine.nnue_net import MangNnue
 from tools.collect_openings import board_to_fen, fen_to_board
@@ -47,13 +47,13 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
-    if not loi_c.co_loi_c():
+    if not c_core.co_loi_c():
         raise SystemExit("Can thu vien C - chay csrc/build.sh truoc")
     net = MangNnue(args.mang)
-    loi_c.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
+    c_core.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
     b0 = start_board()
     w = args.trong_so
-    loi_c.tim_kiem_khoi_tao(
+    c_core.tim_kiem_khoi_tao(
         w, 505.0 - ((1 - w) * thu_cong(b0, "w") + w * net.evaluate(b0, "w")))
 
     rng = random.Random(args.seed)
@@ -84,7 +84,7 @@ def main() -> None:
             if rng.random() < args.random_prob:
                 mv = rng.choice(mvs)
             else:
-                _, mv, _ = loi_c.tim_kiem(board, side, args.depth)
+                _, mv, _ = c_core.tim_kiem(board, side, args.depth)
                 if mv is None:
                     break
             board = make_move(board, mv)

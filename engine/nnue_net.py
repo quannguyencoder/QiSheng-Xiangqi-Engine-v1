@@ -28,9 +28,9 @@ import numpy as np
 import numpy as _np
 
 from engine.board import Board
-from engine import loi_c
+from engine import c_core
 
-_CO_LOI_C = loi_c.co_loi_c()
+_CO_LOI_C = c_core.co_loi_c()
 
 QUAN = "RHEAKCPrheakcp"
 _CHI_SO_QUAN = {p: i for i, p in enumerate(QUAN)}
@@ -88,7 +88,7 @@ class MangNnue:
         if _CO_LOI_C:
             # Liet ke dac trung trong C: vong lap quet 90 o tung chiem 17%
             # thoi gian tim kiem khi viet bang Python.
-            buf, n = loi_c.dac_trung(board)
+            buf, n = c_core.dac_trung(board)
             idx = _np.ctypeslib.as_array(buf)[:n]
             return self.w1[idx].sum(axis=0) + self.b1
         return self.w1[cac_dac_trung(board)].sum(axis=0) + self.b1

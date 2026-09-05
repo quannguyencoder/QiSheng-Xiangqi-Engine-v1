@@ -1068,6 +1068,10 @@ static int xw_tim_kiem_noi_bo(const char *b_in, int trang, int do_sau,
                 if (a < DIEM_MIN) a = DIEM_MIN;
                 if (be > DIEM_MAX) be = DIEM_MAX;
                 int sc = tim(b, trang, d, a, be, 0, 1, &n_tmp);
+                /* Het gio thi sc la gia tri BO DI (tim() tra ve bien de thoat
+                   nhanh), tuyet doi khong duoc ghi vao d_cuoi - neu ghi thi
+                   thanh danh gia se nhay ve 0 giua chung. */
+                if (HET_GIO) break;
                 if ((sc > a && sc < be) || (a == DIEM_MIN && be == DIEM_MAX)) {
                     d_cuoi = sc;
                     break;

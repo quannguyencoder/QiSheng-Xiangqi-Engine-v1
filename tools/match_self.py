@@ -23,7 +23,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
-from engine import loi_c
+from engine import c_core
 from engine import search as search_mod
 from engine.evaluate import material_score
 from tools.collect_openings import fen_to_board
@@ -43,7 +43,7 @@ def tao_ham_danh_gia(spec: str):
         # Gia thiet: mang da hoc duoc tinh co dong tu du lieu nen khong can tinh lai.
         duong, _, w = path.rpartition(":")
         from engine import evaluate as ev
-        from engine.ket_hop import tao_ham_tron
+        from engine.blend import tao_ham_tron
         from engine.nnue_net import MangNnue
         tso = float(w)
         def thu_cong_nhanh(b, s):
@@ -54,7 +54,7 @@ def tao_ham_danh_gia(spec: str):
     if kieu == "tron-c":
         # Duong nhanh: ca ham thu cong, mang, va tron deu chay trong C.
         duong, _, w = path.rpartition(":")
-        from engine.ket_hop import tao_ham_tron_c
+        from engine.blend import tao_ham_tron_c
         f = tao_ham_tron_c(duong, float(w))
         if f is None:
             raise SystemExit("Khong co thu vien C - chay csrc/build.sh truoc")
@@ -63,7 +63,7 @@ def tao_ham_danh_gia(spec: str):
         # tron:<duong dan mang>:<trong so>   vi du tron:weights/x.npz:0.5
         duong, _, w = path.rpartition(":")
         from engine import evaluate as ev
-        from engine.ket_hop import tao_ham_tron
+        from engine.blend import tao_ham_tron
         from engine.nnue_net import MangNnue
         tso = float(w)
         def thu_cong_day_du(b, s):
@@ -135,8 +135,8 @@ def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
         d = depth if a_den_luot else (depth_b or depth)
         if cau_hinh_c is not None:
             w, lech = cau_hinh_c[0:2] if a_den_luot else cau_hinh_c[2:4]
-            loi_c.tim_kiem_khoi_tao(w, lech)
-            _, mv, _ = loi_c.tim_kiem(board, side, d)
+            c_core.tim_kiem_khoi_tao(w, lech)
+            _, mv, _ = c_core.tim_kiem(board, side, d)
         else:
             search_mod.set_evaluator(ham_a if a_den_luot else ham_b)
             _, mv = search_mod.evaluate_current_position(board, side, depth=d)
@@ -176,7 +176,7 @@ def main() -> None:
             duong, _, w = path.rpartition(":")
             w = float(w)
             net = MangNnue(duong)
-            loi_c.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
+            c_core.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
             b0 = start_board()
             lech = 505.0 - ((1 - w) * _tc(b0, "w") + w * net.evaluate(b0, "w"))
             return w, lech, f"tron {int((1-w)*100)}/{int(w*100)} (C)"

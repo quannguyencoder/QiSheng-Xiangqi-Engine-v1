@@ -31,7 +31,7 @@
   .ban{position:relative;background:var(--go);border-radius:6px;
        box-shadow:0 6px 26px rgba(0,0,0,.45);flex-shrink:0}
   .ban svg{display:block}
-  .quan{position:absolute;border-radius:50%;display:flex;align-items:center;
+  .quan{position:absolute;z-index:4;border-radius:50%;display:flex;align-items:center;
         justify-content:center;font-weight:700;cursor:pointer;user-select:none;
         transition:transform .16s, box-shadow .16s;
         background:radial-gradient(circle at 34% 30%,#fdf6e8,#e6d3ae 72%);
@@ -47,6 +47,10 @@
   .cham.an{background:none;border:3px solid rgba(231,76,60,.85);
            box-sizing:border-box}
   .mui-ten{position:absolute;inset:0;pointer-events:none;z-index:5}
+  /* Lop nhan bam phu ca ban co. Can no vi O TRONG khong co phan tu nao de bam:
+     quan co co su kien onclick, con o trong thi khong, nen truoc day chon duoc
+     quan ma bam vao o dich lai khong co gi xay ra. */
+  .lop-bam{position:absolute;inset:0;z-index:3;cursor:pointer}
 
   /* bang dieu khien */
   .ben{width:270px;display:flex;flex-direction:column;gap:14px}
@@ -106,6 +110,10 @@
       </select>
     </div>
     <div class="the">
+      <h2>Nước vừa đi</h2>
+      <div id="cham" style="font-size:14px;min-height:22px">—</div>
+    </div>
+    <div class="the">
       <h2>Nước đi</h2>
       <div class="ds" id="ds"></div>
     </div>
@@ -122,6 +130,8 @@ const TEN = {R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
              K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
 let van = null, banCo = null, chon = null, hopLe = [], vuaDi = null, dangCho = false;
 let benDi = 'trang', goiY = null;          // goiY: [r0,c0,r1,c1] de ve mui ten
+let diemTruoc = 505;                       // de cham chat luong nuoc di
+let phienGoiY = 0;                         // bo qua ket qua goi y den muon
 
 function tuChoi(){ return document.getElementById('cheDo').value === 'tu'; }
 
@@ -151,7 +161,19 @@ function veBan(){
   s += `<text x="${LE+5.3*O}" y="${LE+4.62*O}" fill="var(--luoi)"
          font-size="21" font-family="serif" opacity=".8">漢界</text>`;
   s += `</svg>`;
-  document.getElementById('ban').innerHTML = s;
+  const b = document.getElementById('ban');
+  b.innerHTML = s;
+  const lop = document.createElement('div');
+  lop.className = 'lop-bam';
+  lop.onclick = e => {
+    const hop = b.getBoundingClientRect();
+    // quy toa do con tro ve giao diem gan nhat
+    const c = Math.round((e.clientX - hop.left - LE) / O);
+    const r = Math.round((e.clientY - hop.top  - LE) / O);
+    if(r < 0 || r > 9 || c < 0 || c > 8) return;
+    bam(r, c);
+  };
+  b.appendChild(lop);
 }
 
 function ve(){
@@ -219,18 +241,25 @@ function doiCheDo(){
 }
 
 async function xinGoiY(){
+  const phien = ++phienGoiY;
   document.getElementById('ky').innerHTML = 'Đang phân tích…';
   const d = await goi('/api/goi-y', {ma_van:van,
     muc_do:document.getElementById('mucDo').value});
+  // Nguoi da di nuoc khac trong luc cho -> ket qua nay da cu, bo di.
+  // Khong co buoc nay thi mui ten va thanh danh gia se nhay lung tung.
+  if(phien !== phienGoiY) return;
   if(d.nuoc){ goiY = d.nuoc; veMuiTen(); }
-  if(d.diem!==undefined) thanh(d.diem);
+  if(d.diem!==undefined){ thanh(d.diem); diemTruoc = d.diem; }
   if(d.do_sau) document.getElementById('ky').innerHTML =
     `Gợi ý cho <b>${d.ben==='trang'?'Đỏ':'Đen'}</b> · độ sâu <b>${d.do_sau}</b>
      · <b>${(d.so_nut/1000).toFixed(0)}k</b> nút`;
 }
 
 function bam(r,c){
-  if(!van || dangCho) return;
+  // Che do tu choi: van cho bam khi dang phan tich - nguoi choi khong phai doi.
+  // Ket qua phan tich den muon se bi bo qua nho bien phienGoiY.
+  if(!van) return;
+  if(dangCho && !tuChoi()) return;
   if(chon){
     const mv = hopLe.find(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c);
     if(mv){ chon=null; di(mv); return; }
@@ -268,7 +297,8 @@ function capNhat(d){
 }
 
 function thanh(diem){
-  const pt = Math.max(2, Math.min(98, diem/10));
+  // Truoc day kep o 2-98% nen diem 1000 khong lap day thanh. Nay cho lap tron.
+  const pt = Math.max(0, Math.min(100, diem/10));
   document.getElementById('thanhTrang').style.height = pt+'%';
   document.getElementById('soTrang').textContent = diem;
   document.getElementById('soDen').textContent = 1000-diem;
@@ -285,14 +315,18 @@ async function vanMoi(){
   van = d.ma_van; chon=null; vuaDi=null; goiY=null;
   document.getElementById('ds').innerHTML='';
   document.getElementById('ky').textContent='—';
+  document.getElementById('cham').textContent='—';
+  diemTruoc = 505; phienGoiY++;
   capNhat(d);
   if(tuChoi()) xinGoiY();
 }
 
 async function di(mv){
   dangCho = true;
+  const benTruoc = benDi;
   vuaDi = mv;
   goiY = null;
+  phienGoiY++;                       // huy moi goi y dang cho
   document.getElementById('tt').innerHTML = tuChoi() ? 'Đang phân tích…'
                                                      : 'Máy đang nghĩ…';
   ve(); veMuiTen();
@@ -302,8 +336,26 @@ async function di(mv){
   if(d.loi){ document.getElementById('tt').textContent = 'Lỗi: '+d.loi; return; }
   if(d.nuoc_may) vuaDi = d.nuoc_may;
   themDs(mv, d.nuoc_may);
+  // Cham nuoc vua di: so diem truoc va sau
+  if(d.diem !== undefined){
+    const c = chamNuoc(diemTruoc, d.diem, benTruoc);
+    document.getElementById('cham').innerHTML =
+      `<b style="color:${c.mau}">${c.ten}</b>
+       <span style="color:var(--mo)">${c.lech>=0?'+':''}${c.lech} điểm</span>`;
+    diemTruoc = d.diem;
+  }
   capNhat(d);
   if(tuChoi() && d.trang_thai==='dang_choi') xinGoiY();
+}
+
+// Cham chat luong mot nuoc di dua tren muc diem thay doi. Nguong tren thang
+// 0..1000 cua engine, quy ve goc nhin cua BEN VUA DI.
+function chamNuoc(truoc, sau, benVuaDi){
+  const lech = benVuaDi === 'trang' ? (sau - truoc) : (truoc - sau);
+  if(lech >= -12) return {ten:'Tốt',        mau:'#2ecc71', lech};
+  if(lech >= -40) return {ten:'Không chuẩn', mau:'#f1c40f', lech};
+  if(lech >= -110) return {ten:'Sai lầm',    mau:'#e67e22', lech};
+  return                  {ten:'Sai nghiêm trọng', mau:'#e74c3c', lech};
 }
 
 function themDs(cua_ban, cua_may){

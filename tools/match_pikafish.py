@@ -26,7 +26,7 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
-from engine import loi_c
+from engine import c_core
 from engine.search import evaluate_current_position
 from tools.collect_openings import board_to_fen, fen_to_board, iccs_to_move
 from tools.label_pikafish import EngineTreo
@@ -170,13 +170,13 @@ def play_game(eng: Pikafish, xuanwu_is_white: bool, depth: int, max_plies: int,
                 # Sach khai cuoc: nuoc Pikafish depth 10 da chon, tot hon search
                 # cua ta o khai cuoc va lay ra tuc thi. Truoc day sach da dung
                 # nhung KHONG BAO GIO duoc dung trong cac phep do Elo.
-                from engine import sach
+                from engine import book
                 from engine.search import board_hash
-                mv = sach.tra_sach(board, side, board_hash(board, side))
+                mv = book.tra_sach(board, side, board_hash(board, side))
             if mv is not None:
                 pass
             elif _DUNG_C:
-                _, mv, _ = loi_c.tim_kiem(board, side, depth)
+                _, mv, _ = c_core.tim_kiem(board, side, depth)
             else:
                 _, mv = evaluate_current_position(board, side, depth=depth)
             if mv is None:
@@ -233,11 +233,11 @@ def main() -> None:
         from engine.evaluate import evaluate as _tc
         from engine.nnue_net import MangNnue
         net = MangNnue(args.mang)
-        loi_c.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
+        c_core.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
         b0 = start_board()
         w = args.trong_so
         lech = 505.0 - ((1 - w) * _tc(b0, "w") + w * net.evaluate(b0, "w"))
-        loi_c.tim_kiem_khoi_tao(w, lech)
+        c_core.tim_kiem_khoi_tao(w, lech)
         _DUNG_C = True
         print(f"Danh gia: tron {int((1-w)*100)}/{int(w*100)} (tim kiem trong C)")
     elif args.nnue_net:
