@@ -570,7 +570,11 @@ static int danh_gia_voi_acc(const char *b, int trang, const float *acc,
  * cung khong bao dam luc co, chi co dau doi khang moi noi that.
  * Giu code lai de khong ai thu lai, nhung MAC DINH TAT.
  */
-static int KEO_DAI_CHIEU = 1;      /* keo dai mot tang khi nuoc di gay chieu */
+/* Keo dai mot tang khi nuoc di gay chieu.
+   Do 60 van: +12 Elo (khoang tin cay -78…+102) - trung tinh o CUNG DO SAU.
+   Nhung no lam depth 12 cham tu 6,4 len 10,5 giay (+64%), nen o cung THOI GIAN
+   thi ben khong keo dai tim sau hon va thang. MAC DINH TAT. */
+static int KEO_DAI_CHIEU = 0;
 
 void qs_dat_keo_dai(int bat) { KEO_DAI_CHIEU = bat; }
 
