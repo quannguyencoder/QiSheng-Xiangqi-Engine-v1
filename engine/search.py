@@ -19,9 +19,20 @@ import random
 from typing import Dict, List, Optional, Tuple
 
 from engine.board import (
-    Board, Move, WHITE, BLACK, legal_moves, pseudo_legal_moves,
-    make_move, in_check,
+    Board, Move, WHITE, BLACK, legal_moves as _legal_py,
+    pseudo_legal_moves, make_move, in_check as _in_check_py,
 )
+from engine import loi_c
+
+# Dung phan loi viet bang C neu bien dich duoc (nhanh 29,5x cho sinh nuoc di),
+# nguoc lai chay tiep bang Python thuan. Ca hai da doi chieu 3.000 truong hop
+# khong lech va perft khop chuan 44/1.920/79.666.
+if loi_c.co_loi_c():
+    legal_moves = loi_c.nuoc_di_hop_le
+    in_check = loi_c.bi_chieu
+else:
+    legal_moves = _legal_py
+    in_check = _in_check_py
 from engine.evaluate import PIECE_VALUES
 from engine.evaluate import evaluate as handcrafted_evaluate
 from engine.scoring import MIN_SCORE, MAX_SCORE
@@ -57,7 +68,26 @@ QUIESCENCE_MAX_PLY = 4
 _MATE_MARGIN = 50        # khong luu vao TT cac diem sat bien (diem chieu het)
 
 
+def _nap_zobrist_vao_c() -> bool:
+    """Day bang Zobrist cua Python sang C de hai ben cho cung ma bam."""
+    if not loi_c.co_loi_c():
+        return False
+    thu_tu = "RHEAKCPrheakcp"
+    bang = []
+    for p in thu_tu:
+        for r in range(10):
+            for c in range(9):
+                bang.append(ZOBRIST[p][r][c])
+    loi_c.nap_zobrist(bang, ZOBRIST_BLACK_TO_MOVE)
+    return True
+
+
+_BAM_BANG_C = _nap_zobrist_vao_c()
+
+
 def board_hash(board: Board, side_to_move: str) -> int:
+    if _BAM_BANG_C:
+        return loi_c.bam(board, side_to_move)
     h = 0
     for r in range(10):
         row = board[r]
@@ -261,7 +291,9 @@ def search(board: Board, side_to_move: str, depth: int,
     # Hop le luoi bieng: sinh nuoc CHUA loc, kiem tra tinh hop le cua tung nuoc
     # ngay truoc khi tim no. Nuoc nao bi alpha-beta cat thi khong ton mot lan
     # in_check nao. Dem so nuoc hop le da thuc su thu de con biet chieu bi.
-    moves = pseudo_legal_moves(board, side_to_move)
+    # Voi loi C, sinh nuoc HOP LE chi ton 6,9 us - re ngang sinh nuoc chua loc,
+    # nen loc luon thay vi kiem tra luoi bieng tung nuoc.
+    moves = legal_moves(board, side_to_move)
     if not moves:
         return _terminal_score(side_to_move, ply), None
 
@@ -290,8 +322,6 @@ def search(board: Board, side_to_move: str, depth: int,
         best_score = -math.inf
         for mv in order_moves(board, moves, tt_move, ply):
             con = make_move(board, mv)
-            if in_check(con, side_to_move):
-                continue                      # nuoc nay lam lo Tuong -> bo
             so_hop_le += 1
             # --- Late move reduction ---
             giam = 0
@@ -318,8 +348,6 @@ def search(board: Board, side_to_move: str, depth: int,
         best_score = math.inf
         for mv in order_moves(board, moves, tt_move, ply):
             con = make_move(board, mv)
-            if in_check(con, side_to_move):
-                continue
             so_hop_le += 1
             giam = 0
             # Dem theo so nuoc HOP LE, khong theo chi so i: i con dem ca nuoc
@@ -350,8 +378,6 @@ def search(board: Board, side_to_move: str, depth: int,
             best_score = -math.inf
             for mv in order_moves(board, moves, tt_move, ply):
                 con = make_move(board, mv)
-                if in_check(con, side_to_move):
-                    continue
                 sc, _ = search(con, BLACK, depth - 1, alpha_orig, beta_orig,
                                tt, ply + 1)
                 if sc > best_score:
@@ -360,8 +386,6 @@ def search(board: Board, side_to_move: str, depth: int,
             best_score = math.inf
             for mv in order_moves(board, moves, tt_move, ply):
                 con = make_move(board, mv)
-                if in_check(con, side_to_move):
-                    continue
                 sc, _ = search(con, WHITE, depth - 1, alpha_orig, beta_orig,
                                tt, ply + 1)
                 if sc < best_score:
@@ -382,10 +406,26 @@ def search(board: Board, side_to_move: str, depth: int,
     return best_score, best_move
 
 
+NEUTRAL_TU_SACH = 505      # the co con trong sach -> coi nhu can bang
+
+
 def evaluate_current_position(board: Board, side_to_move: str,
-                              depth: int = 1) -> Tuple[int, Optional[Move]]:
+                              depth: int = 1,
+                              dung_sach: bool = False) -> Tuple[int, Optional[Move]]:
     """Ham chinh: tra ve (diem cua Trang tren thang 0..1000, nuoc di tot nhat).
     depth=1 du de phat hien 'chieu het ngay trong nuoc nay' -> 1000."""
+    # --- Sach khai cuoc ---
+    # Nuoc trong sach la nuoc Pikafish depth 10 da chon, tot hon search depth
+    # 5-6 cua ta o khai cuoc, va lay ra tuc thi nen danh duoc ca thoi gian cho
+    # trung cuoc. Chi dung khi dung_sach = True de cac phep do doi khang van
+    # so sanh dung phan search.
+    if dung_sach:
+        from engine import sach
+        mv_sach = sach.tra_sach(board, side_to_move,
+                                board_hash(board, side_to_move))
+        if mv_sach is not None:
+            return NEUTRAL_TU_SACH, mv_sach
+
     reset_heuristics()
     # --- Iterative deepening ---
     # Tim depth 1 truoc, roi 2, roi 3... Nghe co ve lang phi nhung thuc te

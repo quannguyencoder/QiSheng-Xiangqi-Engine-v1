@@ -25,7 +25,12 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
+import numpy as _np
+
 from engine.board import Board
+from engine import loi_c
+
+_CO_LOI_C = loi_c.co_loi_c()
 
 QUAN = "RHEAKCPrheakcp"
 _CHI_SO_QUAN = {p: i for i, p in enumerate(QUAN)}
@@ -80,6 +85,12 @@ class MangNnue:
     # -- duong tinh lai tu dau (dung ngay duoc, khong can sua search) ------
 
     def tich_luy(self, board: Board) -> np.ndarray:
+        if _CO_LOI_C:
+            # Liet ke dac trung trong C: vong lap quet 90 o tung chiem 17%
+            # thoi gian tim kiem khi viet bang Python.
+            buf, n = loi_c.dac_trung(board)
+            idx = _np.ctypeslib.as_array(buf)[:n]
+            return self.w1[idx].sum(axis=0) + self.b1
         return self.w1[cac_dac_trung(board)].sum(axis=0) + self.b1
 
     def evaluate(self, board: Board, side_to_move: str) -> int:

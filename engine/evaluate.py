@@ -79,10 +79,20 @@ def dat_co_dong(bat: bool) -> None:
     _DUNG_CO_DONG = bat
 
 
+from engine import loi_c
+
+_CO_LOI_C = loi_c.co_loi_c()
+
+
 def evaluate(board: Board, side_to_move: str) -> int:
     """Danh gia tinh (khong tim kiem), tra ve diem 0..1000 goc nhin Trang."""
-    raw = material_score(board) + positional_score(board) * PST_WEIGHT
-    if _DUNG_CO_DONG:
-        raw += mobility_score(board) * MOBILITY_WEIGHT
+    if _CO_LOI_C and not _DUNG_CO_DONG:
+        # Duong nhanh: vat chat + vi tri tinh trong C (doi chieu 2.000 the co
+        # khong lech). Chi dung khi tat co dong vi C khong tinh co dong.
+        raw = loi_c.danh_gia_tho(board)
+    else:
+        raw = material_score(board) + positional_score(board) * PST_WEIGHT
+        if _DUNG_CO_DONG:
+            raw += mobility_score(board) * MOBILITY_WEIGHT
     return raw_to_score(raw, white_to_move=(side_to_move == WHITE))
 
