@@ -44,8 +44,17 @@
   .quan.vua-di{box-shadow:0 0 0 3px #3498db,0 2px 8px rgba(0,0,0,.5)}
   .cham{position:absolute;border-radius:50%;background:rgba(46,204,113,.62);
         pointer-events:none}
-  .cham.an{background:none;border:3px solid rgba(231,76,60,.85);
-           box-sizing:border-box}
+  /* O an quan: vong do day, co nhip dap de nhin ra ngay giua cac cham xanh */
+  .cham.an{background:rgba(231,76,60,.16);border:4px solid #e74c3c;
+           box-sizing:border-box;animation:dap 1.1s ease-in-out infinite}
+  @keyframes dap{0%,100%{transform:scale(1);opacity:.95}
+                 50%{transform:scale(1.09);opacity:.65}}
+  .quan.se-bi-an{animation:rung .55s ease-in-out infinite}
+  @keyframes rung{0%,100%{transform:scale(1.07) rotate(0)}
+                  25%{transform:scale(1.07) rotate(-4deg)}
+                  75%{transform:scale(1.07) rotate(4deg)}}
+  .quan.bay{transition:left .26s cubic-bezier(.34,1.3,.5,1),
+                       top  .26s cubic-bezier(.34,1.3,.5,1);z-index:9}
   .mui-ten{position:absolute;inset:0;pointer-events:none;z-index:5}
   /* Lop nhan bam phu ca ban co. Can no vi O TRONG khong co phan tu nao de bam:
      quan co co su kien onclick, con o trong thi khong, nen truoc day chon duoc
@@ -193,6 +202,9 @@ function ve(){
     if(chon && chon[0]===r && chon[1]===c) d.classList.add('chon');
     if(vuaDi && ((vuaDi[0]===r&&vuaDi[1]===c)||(vuaDi[2]===r&&vuaDi[3]===c)))
       d.classList.add('vua-di');
+    // Quan dang bi nham an: rung nhe de nhin ra ngay
+    if(chon && hopLe.some(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c))
+      d.classList.add('se-bi-an');
     d.onclick = ()=>bam(r,c);
     b.appendChild(d);
   }
@@ -294,6 +306,8 @@ function capNhat(d){
      · <b>${d.giay}</b> giây`;
   ve();
   veMuiTen();
+  if(d.trang_thai !== 'dang_choi') amThanh('het');
+  else if(d.bi_chieu) amThanh('chieu');
 }
 
 function thanh(diem){
@@ -324,17 +338,28 @@ async function vanMoi(){
 async function di(mv){
   dangCho = true;
   const benTruoc = benDi;
-  vuaDi = mv;
   goiY = null;
   phienGoiY++;                       // huy moi goi y dang cho
+  chon = null;
+  // Cho quan truot sang o moi TRUOC khi goi may chu, de nguoi choi thay ngay
+  // nuoc di cua minh thay vi doi may nghi xong moi thay ban co doi.
+  await new Promise(r => bay(mv, r));
+  vuaDi = mv;
   document.getElementById('tt').innerHTML = tuChoi() ? 'Đang phân tích…'
                                                      : 'Máy đang nghĩ…';
-  ve(); veMuiTen();
   const d = await goi('/api/di',{ma_van:van, nuoc:mv, tu_choi:tuChoi(),
     muc_do:document.getElementById('mucDo').value});
   dangCho = false;
   if(d.loi){ document.getElementById('tt').textContent = 'Lỗi: '+d.loi; return; }
-  if(d.nuoc_may) vuaDi = d.nuoc_may;
+  if(d.nuoc_may){
+    // Ve lai ban co o trang thai TRUOC nuoc may, roi cho quan may bay
+    banCo = d.ban_co.map(h=>h.split(''));
+    const [r0,c0,r1,c1] = d.nuoc_may;
+    banCo[r0][c0] = banCo[r1][c1]; banCo[r1][c1] = '.';
+    hopLe = []; chon = null; ve();
+    await new Promise(r => bay(d.nuoc_may, r));
+    vuaDi = d.nuoc_may;
+  }
   themDs(mv, d.nuoc_may);
   // Cham nuoc vua di: so diem truoc va sau
   if(d.diem !== undefined){
@@ -367,6 +392,68 @@ function themDs(cua_ban, cua_may){
                  <span style="color:var(--mo)">${k(cua_may)}</span>`;
   ds.appendChild(d);
   ds.scrollTop = ds.scrollHeight;
+}
+
+// --- Am thanh ---
+// Hai tep do nguoi dung them: tieng quan co va tieng thang cuoc.
+// Chieu tuong va an quan van tao bang Web Audio: an quan dung chinh tep di
+// quan nhung ha cao do va tang am luong cho nang hon, nen khong can them tep.
+const TEP = {
+  di:  new Audio('sound-move.mp3'),
+  win: new Audio('sound-win.wav'),
+};
+TEP.di.volume = 0.75;
+TEP.win.volume = 0.55;
+
+let AC = null;
+function amThanh(loai){
+  try{
+    if(loai === 'di' || loai === 'an'){
+      const a = TEP.di.cloneNode();            // clone de di nhanh khong bi cat
+      a.volume = loai === 'an' ? 1.0 : 0.7;
+      a.playbackRate = loai === 'an' ? 0.72 : 1.0;   // an quan: tram va nang hon
+      a.play().catch(()=>{});
+      return;
+    }
+    if(loai === 'het'){
+      const a = TEP.win.cloneNode();
+      a.volume = 0.55;
+      a.play().catch(()=>{});
+      return;
+    }
+    if(loai === 'chieu'){
+      // Chieu tuong: hai not len cao, bao dong. Tao bang Web Audio vi khong
+      // co tep rieng cho tinh huong nay.
+      AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+      const t = AC.currentTime;
+      [880, 1250].forEach((f,i)=>{
+        const o = AC.createOscillator(), g = AC.createGain();
+        o.type='sine'; o.frequency.value=f;
+        g.gain.setValueAtTime(0, t+i*0.1);
+        g.gain.linearRampToValueAtTime(0.2, t+i*0.1+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t+i*0.1+0.22);
+        o.connect(g); g.connect(AC.destination);
+        o.start(t+i*0.1); o.stop(t+i*0.1+0.3);
+      });
+    }
+  }catch(e){}
+}
+
+// Cho quan co TRUOT tu o cu sang o moi thay vi nhay cai vu
+function bay(mv, xong){
+  const b = document.getElementById('ban');
+  const kt = O*0.82;
+  const q = [...b.querySelectorAll('.quan')].find(e =>
+    Math.abs(parseFloat(e.style.left) - (LE+mv[1]*O-kt/2)) < 2 &&
+    Math.abs(parseFloat(e.style.top)  - (LE+mv[0]*O-kt/2)) < 2);
+  if(!q){ xong(); return; }
+  const anQuan = banCo[mv[2]][mv[3]] !== '.';
+  q.classList.add('bay');
+  requestAnimationFrame(()=>{
+    q.style.left = (LE+mv[3]*O-kt/2)+'px';
+    q.style.top  = (LE+mv[2]*O-kt/2)+'px';
+  });
+  setTimeout(()=>{ amThanh(anQuan?'an':'di'); xong(); }, 265);
 }
 
 veBan();
