@@ -233,19 +233,63 @@ int qs_gen_pseudo(const char *b, int trang, int *out) {
 
 /* Sinh nuoc di HOP LE: sinh pseudo roi thu tung nuoc, loai nuoc lam lo Tuong.
    Toan bo lam trong C, chi mot lan goi tu Python cho ca nut. */
-int qs_gen_legal(const char *b, int trang, int *out) {
+/* Ban trong: sua truc tiep tren ban co roi LUI lai, thay vi sao chep 90 byte
+   cho tung nuoc. Moi nut co ~40 nuoc, o 7 trieu nut la ~25 GB sao chep tiet
+   kiem duoc. Ban co duoc tra ve nguyen trang truoc khi ham ket thuc. */
+static int gen_legal_tai_cho(char *b, int trang, int *out) {
     int tmp[256];
     int n = qs_gen_pseudo(b, trang, tmp);
-    char sao[90];
     int m = 0;
+
+    /* Chi kiem tra nhung nuoc CO THE lam lo Tuong.
+     *
+     * Truoc day moi nut goi qs_bi_chieu ~40 lan (moi nuoc mot lan) - do la ~75%
+     * chi phi mot nut. Nhung phan lon nuoc di khong the nao lam lo Tuong.
+     *
+     * Trong co tuong, Tuong chi bi lo qua HANG hoac COT (Xe, Phao, va luat
+     * Tuong doi mat). Ma va Tuong (voi) khong the ghim quan.
+     *   - Roi mot o tren hang/cot cua Tuong minh -> co the mo duong. Phai kiem.
+     *   - Di VAO mot o tren hang/cot cua Tuong minh -> co the thanh ngoi cho
+     *     Phao doi phuong, tao ra chieu. Cung phai kiem.
+     *   - Nuoc di cua chinh Tuong -> luon phai kiem.
+     *   - Dang bi chieu -> phai kiem het.
+     *
+     * CON MOT TRUONG HOP NUA, va no da lam 18/4.000 the co sai khi thieu:
+     * quan dang CAN CHAN MA cua doi phuong. Neu no di khoi, con Ma do chieu
+     * duoc Tuong ngay - ma o can chan KHONG nam tren hang hay cot cua Tuong.
+     * Tinh ra thi moi o can chan cua Ma nham vao Tuong deu la mot trong 4 o
+     * CHEO KE Tuong. Nen phai kiem them cac nuoc roi khoi 4 o do.
+     */
+    int k = tim_tuong(b, trang);
+    int dang_bi_chieu = qs_bi_chieu(b, trang);
+    int kr = k / 9, kc = k % 9;
+
     for (int i = 0; i < n; i++) {
-        memcpy(sao, b, 90);
         int from = (tmp[i] >> 8) & 127, to = tmp[i] & 127;
-        sao[to] = sao[from];
-        sao[from] = '.';
-        if (!qs_bi_chieu(sao, trang)) out[m++] = tmp[i];
+        int fr = from / 9, fc = from % 9;
+        int dr = fr - kr, dc = fc - kc;
+        if (dr < 0) dr = -dr;
+        if (dc < 0) dc = -dc;
+        int cheo_ke_tuong = (dr == 1 && dc == 1);      /* o can chan Ma */
+        int can_kiem = dang_bi_chieu || k < 0 || from == k
+                       || fr == kr || fc == kc || cheo_ke_tuong
+                       || (to / 9) == kr || (to % 9) == kc;
+        if (!can_kiem) { out[m++] = tmp[i]; continue; }
+        char q_di = b[from], q_bi_an = b[to];
+        b[to] = q_di;
+        b[from] = '.';
+        if (!qs_bi_chieu(b, trang)) out[m++] = tmp[i];
+        b[from] = q_di;
+        b[to] = q_bi_an;
     }
     return m;
+}
+
+/* Ban ngoai cho Python: sao mot lan roi goi ban trong. */
+int qs_gen_legal(const char *b, int trang, int *out) {
+    char sao[90];
+    memcpy(sao, b, 90);
+    return gen_legal_tai_cho(sao, trang, out);
 }
 
 /* Perft - dem so la o do sau N. Dung de kiem chung luat khop voi ban Python. */
@@ -569,15 +613,32 @@ static int khoa_sap_xep(const char *b, int mv, int mv_tt, int ply) {
     return -HISTORY[from * 90 + to] / 1000;
 }
 
-static void sap_xep(const char *b, int *mv, int n, int mv_tt, int ply) {
-    int khoa[256];
+/* Chon nuoc theo NHU CAU thay vi sap xep het.
+ *
+ * Alpha-beta thuong cat sau 1-3 nuoc dau, nen sap xep ca ~40 nuoc la lam thua
+ * phan lon cong viec. Nay chi tinh khoa mot lan, roi moi vong lay ra nuoc tot
+ * nhat con lai (doi cho voi vi tri hien tai). Neu cat som thi cac nuoc con lai
+ * khong ton mot phep so sanh nao.
+ */
+static void tinh_khoa(const char *b, const int *mv, int n, int mv_tt, int ply,
+                      int *khoa) {
     for (int i = 0; i < n; i++) khoa[i] = khoa_sap_xep(b, mv[i], mv_tt, ply);
-    for (int i = 1; i < n; i++) {          /* chen truc tiep: n nho (~40) */
-        int k = khoa[i], m = mv[i], j = i - 1;
-        while (j >= 0 && khoa[j] > k) {
-            khoa[j + 1] = khoa[j]; mv[j + 1] = mv[j]; j--;
-        }
-        khoa[j + 1] = k; mv[j + 1] = m;
+}
+
+/* Chon nuoc tot nhat con lai va dua len vi tri i, GIU NGUYEN thu tu tuong doi
+   cua nhung nuoc con lai.
+   Ban dau viet kieu hoan doi cho nhanh, nhung no xao tron thu tu cua cac nuoc
+   co diem BANG NHAU - ma nuoc thuong thi diem bang nhau rat nhieu. Ket qua la
+   thu tu thu nuoc kem di va so nut TANG len (depth 11: 4,1 trieu -> 5,1 trieu).
+   Nay dich ca doan mot buoc thay vi hoan doi, giu dung thu tu nhu sap xep on
+   dinh truoc day. */
+static inline void chon_tot_nhat(int *mv, int *khoa, int n, int i) {
+    int tot = i;
+    for (int j = i + 1; j < n; j++) if (khoa[j] < khoa[tot]) tot = j;
+    if (tot != i) {
+        int m = mv[tot], k = khoa[tot];
+        for (int j = tot; j > i; j--) { mv[j] = mv[j - 1]; khoa[j] = khoa[j - 1]; }
+        mv[i] = m; khoa[i] = k;
     }
 }
 
@@ -585,7 +646,7 @@ static int danh_gia(const char *b, int trang) {
     return qs_danh_gia_tron(b, trang, TRONG_SO_MANG, LECH_HIEU_CHINH);
 }
 
-static int quiescence(const char *b, int trang, int alpha, int beta,
+static int quiescence(char *b, int trang, int alpha, int beta,
                       int ply, int ply_goc) {
     SO_NUT++;
     int bi_chieu = qs_bi_chieu(b, trang);
@@ -593,7 +654,7 @@ static int quiescence(const char *b, int trang, int alpha, int beta,
     if (ply >= QUIESCENCE_TOI_DA && !bi_chieu) return dung_yen;
 
     int mv[256];
-    int n = qs_gen_legal(b, trang, mv);
+    int n = gen_legal_tai_cho(b, trang, mv);
     if (n == 0) return diem_cuoi(trang, ply_goc + ply);
 
     if (!bi_chieu) {                       /* the co yen: chi xet nuoc an quan */
@@ -602,9 +663,9 @@ static int quiescence(const char *b, int trang, int alpha, int beta,
         n = m;
         if (n == 0) return dung_yen;
     }
-    sap_xep(b, mv, n, -1, ply_goc + ply);
+    int khoa[256];
+    tinh_khoa(b, mv, n, -1, ply_goc + ply, khoa);
 
-    char sao[90];
     if (trang) {
         int tot = bi_chieu ? -1000000 : dung_yen;
         if (!bi_chieu) {
@@ -612,8 +673,12 @@ static int quiescence(const char *b, int trang, int alpha, int beta,
             if (dung_yen > alpha) alpha = dung_yen;
         }
         for (int i = 0; i < n; i++) {
-            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
-            int sc = quiescence(sao, 0, alpha, beta, ply + 1, ply_goc);
+            chon_tot_nhat(mv, khoa, n, i);
+            int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
+            char q_di = b[from], q_an = b[to];
+            b[to] = q_di; b[from] = '.';
+            int sc = quiescence(b, 0, alpha, beta, ply + 1, ply_goc);
+            b[from] = q_di; b[to] = q_an;
             if (sc > tot) tot = sc;
             if (tot > alpha) alpha = tot;
             if (alpha >= beta) break;
@@ -626,8 +691,12 @@ static int quiescence(const char *b, int trang, int alpha, int beta,
             if (dung_yen < beta) beta = dung_yen;
         }
         for (int i = 0; i < n; i++) {
-            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
-            int sc = quiescence(sao, 1, alpha, beta, ply + 1, ply_goc);
+            chon_tot_nhat(mv, khoa, n, i);
+            int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
+            char q_di = b[from], q_an = b[to];
+            b[to] = q_di; b[from] = '.';
+            int sc = quiescence(b, 1, alpha, beta, ply + 1, ply_goc);
+            b[from] = q_di; b[to] = q_an;
             if (sc < tot) tot = sc;
             if (tot < beta) beta = tot;
             if (alpha >= beta) break;
@@ -659,7 +728,7 @@ static void ghi_cat_tia(const char *b, int mv, int ply, int do_sau) {
     HISTORY[((mv >> 8) & 127) * 90 + (mv & 127)] += do_sau * do_sau;
 }
 
-static int tim(const char *b, int trang, int do_sau, int alpha, int beta,
+static int tim(char *b, int trang, int do_sau, int alpha, int beta,
                int ply, int cho_bo_luot, int *nuoc_ra) {
     SO_NUT++;
     int alpha_goc = alpha, beta_goc = beta;
@@ -679,11 +748,10 @@ static int tim(const char *b, int trang, int do_sau, int alpha, int beta,
     if (do_sau == 0) return quiescence(b, trang, alpha, beta, 0, ply);
 
     int mv[256];
-    int n = qs_gen_legal(b, trang, mv);
+    int n = gen_legal_tai_cho(b, trang, mv);
     if (n == 0) return diem_cuoi(trang, ply);
 
     int bi_chieu = qs_bi_chieu(b, trang);
-    char sao[90];
 
     /* --- Null-move pruning --- */
     if (cho_bo_luot && ply > 0 && do_sau >= NULL_MIN_DEPTH && !bi_chieu
@@ -700,25 +768,34 @@ static int tim(const char *b, int trang, int do_sau, int alpha, int beta,
         }
     }
 
-    sap_xep(b, mv, n, mv_tt, ply);
+    int khoa_mv[256];
+    tinh_khoa(b, mv, n, mv_tt, ply, khoa_mv);
     int tot_nuoc = -1, tot_diem;
 
     if (trang) {
         tot_diem = -1000000;
         for (int i = 0; i < n; i++) {
-            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            chon_tot_nhat(mv, khoa_mv, n, i);
+            int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
+            int la_an_quan = (b[to] != '.');
+            char q_di = b[from], q_an = b[to];
             int giam = 0;
             if (i >= LMR_SAU_NUOC && do_sau >= LMR_MIN_DEPTH && !bi_chieu
-                    && b[mv[i] & 127] == '.') {
+                    && !la_an_quan) {
                 giam = (i < 7) ? 1 : 2;
                 if (giam >= do_sau) giam = do_sau - 1;
             }
+            b[to] = q_di; b[from] = '.';
+            int bo_qua = 0;
             if (giam) {
-                int sc = tim(sao, 0, do_sau - 1 - giam, alpha, alpha + 1,
+                int sc = tim(b, 0, do_sau - 1 - giam, alpha, alpha + 1,
                              ply + 1, 1, 0);
-                if (sc <= alpha) continue;
+                if (sc <= alpha) bo_qua = 1;
             }
-            int sc = tim(sao, 0, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            int sc = 0;
+            if (!bo_qua) sc = tim(b, 0, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            b[from] = q_di; b[to] = q_an;
+            if (bo_qua) continue;
             if (sc > tot_diem) { tot_diem = sc; tot_nuoc = mv[i]; }
             if (tot_diem > alpha) alpha = tot_diem;
             if (alpha >= beta) { ghi_cat_tia(b, mv[i], ply, do_sau); break; }
@@ -726,19 +803,27 @@ static int tim(const char *b, int trang, int do_sau, int alpha, int beta,
     } else {
         tot_diem = 1000000;
         for (int i = 0; i < n; i++) {
-            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            chon_tot_nhat(mv, khoa_mv, n, i);
+            int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
+            int la_an_quan = (b[to] != '.');
+            char q_di = b[from], q_an = b[to];
             int giam = 0;
             if (i >= LMR_SAU_NUOC && do_sau >= LMR_MIN_DEPTH && !bi_chieu
-                    && b[mv[i] & 127] == '.') {
+                    && !la_an_quan) {
                 giam = (i < 7) ? 1 : 2;
                 if (giam >= do_sau) giam = do_sau - 1;
             }
+            b[to] = q_di; b[from] = '.';
+            int bo_qua = 0;
             if (giam) {
-                int sc = tim(sao, 1, do_sau - 1 - giam, beta - 1, beta,
+                int sc = tim(b, 1, do_sau - 1 - giam, beta - 1, beta,
                              ply + 1, 1, 0);
-                if (sc >= beta) continue;
+                if (sc >= beta) bo_qua = 1;
             }
-            int sc = tim(sao, 1, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            int sc = 0;
+            if (!bo_qua) sc = tim(b, 1, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            b[from] = q_di; b[to] = q_an;
+            if (bo_qua) continue;
             if (sc < tot_diem) { tot_diem = sc; tot_nuoc = mv[i]; }
             if (tot_diem < beta) beta = tot_diem;
             if (alpha >= beta) { ghi_cat_tia(b, mv[i], ply, do_sau); break; }
@@ -748,9 +833,12 @@ static int tim(const char *b, int trang, int do_sau, int alpha, int beta,
     if (tot_nuoc < 0) {          /* moi nuoc bi LMR cat -> tim lai day du */
         tot_diem = trang ? -1000000 : 1000000;
         for (int i = 0; i < n; i++) {
-            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
-            int sc = tim(sao, !trang, do_sau - 1, alpha_goc, beta_goc,
+            int from = (mv[i] >> 8) & 127, to = mv[i] & 127;
+            char q_di = b[from], q_an = b[to];
+            b[to] = q_di; b[from] = '.';
+            int sc = tim(b, !trang, do_sau - 1, alpha_goc, beta_goc,
                          ply + 1, 1, 0);
+            b[from] = q_di; b[to] = q_an;
             if (trang ? (sc > tot_diem) : (sc < tot_diem)) {
                 tot_diem = sc; tot_nuoc = mv[i];
             }
