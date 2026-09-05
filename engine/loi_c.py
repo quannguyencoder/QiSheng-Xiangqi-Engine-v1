@@ -51,6 +51,11 @@ def _nap() -> Optional[ctypes.CDLL]:
     lib.qs_bi_chieu.restype = ctypes.c_int
     lib.qs_bi_chieu.argtypes = [ctypes.c_char_p, ctypes.c_int]
     F = ctypes.POINTER(ctypes.c_float)
+    lib.qs_tim_kiem.restype = ctypes.c_int
+    lib.qs_tim_kiem.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int,
+                                ctypes.POINTER(ctypes.c_int),
+                                ctypes.POINTER(ctypes.c_longlong)]
+    lib.qs_tim_kiem_khoi_tao.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.qs_nnue_nap.restype = ctypes.c_int
     lib.qs_nnue_nap.argtypes = [F, F, F, F, F, ctypes.c_float,
                                 ctypes.c_int, ctypes.c_int]
@@ -166,3 +171,19 @@ def danh_gia_tron(board: Board, side: str, trong_so: float, lech: float) -> int:
     """Ham danh gia hoan chinh: thu cong + mang + tron, mot lan goi duy nhat."""
     return _nap().qs_danh_gia_tron(_sang_c(board), 1 if side == WHITE else 0,
                                    trong_so, lech)
+
+
+_diem_ra = ctypes.c_int()
+_nut_ra = ctypes.c_longlong()
+
+
+def tim_kiem_khoi_tao(trong_so: float, lech: float) -> None:
+    _nap().qs_tim_kiem_khoi_tao(ctypes.c_double(trong_so), ctypes.c_double(lech))
+
+
+def tim_kiem(board: Board, side: str, depth: int):
+    """Toan bo tim kiem chay trong C. Tra ve (diem, nuoc di, so nut)."""
+    ma = _nap().qs_tim_kiem(_sang_c(board), 1 if side == WHITE else 0, depth,
+                            ctypes.byref(_diem_ra), ctypes.byref(_nut_ra))
+    nuoc = None if ma < 0 else _GIAI_MA[ma]
+    return _diem_ra.value, nuoc, _nut_ra.value

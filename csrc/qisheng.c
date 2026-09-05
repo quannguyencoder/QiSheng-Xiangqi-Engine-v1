@@ -342,13 +342,32 @@ int qs_dac_trung(const char *b, int *out) {
    ben dung dung mot bang va ma bam khop nhau. */
 static unsigned long long ZOB[14 * 90];
 static unsigned long long ZOB_DEN;
+static int ZOB_SAN_SANG = 0;
+
+/* C tu sinh bang bam bang mot bo sinh so co dinh.
+   TRUOC DAY bang chi duoc nap tu Python, nen neu quen nap thi qs_bam tra ve 0
+   cho MOI the co - moi the co dung chung mot o bang chuyen vi va engine tra ve
+   diem rac. Loi do khong lam chuong trinh chet, chi lam ket qua sai am tham.
+   Nay C tu lo, Python chi ghi de khi can hai ben cho cung ma bam. */
+static void tu_sinh_zobrist(void) {
+    unsigned long long x = 0x9E3779B97F4A7C15ULL;
+    for (int i = 0; i < 14 * 90; i++) {
+        x ^= x << 13; x ^= x >> 7; x ^= x << 17;
+        ZOB[i] = x;
+    }
+    x ^= x << 13; x ^= x >> 7; x ^= x << 17;
+    ZOB_DEN = x;
+    ZOB_SAN_SANG = 1;
+}
 
 void qs_dat_zobrist(const unsigned long long *bang, unsigned long long den) {
     for (int i = 0; i < 14 * 90; i++) ZOB[i] = bang[i];
     ZOB_DEN = den;
+    ZOB_SAN_SANG = 1;
 }
 
 unsigned long long qs_bam(const char *b, int trang) {
+    if (!ZOB_SAN_SANG) tu_sinh_zobrist();
     unsigned long long h = 0;
     for (int sq = 0; sq < 90; sq++) {
         char p = b[sq];
@@ -470,4 +489,299 @@ int qs_nnue_danh_gia(const char *b, int trang) {
     if (r < 1) r = 1;
     if (r > 999) r = 999;
     return (int)r;
+}
+
+/* ==========================================================================
+ * Vong lap tim kiem trong C.
+ *
+ * Sau khi da chuyen sinh nuoc di, danh gia va bam sang C, thu con lai bang
+ * Python la CHINH VONG LAP: moi nut phai sorted() voi ham khoa Python, tra
+ * dict bang chuyen vi, cap phat tuple. Nhan voi hang tram nghin nut thi day
+ * tro thanh phan ton nhat.
+ *
+ * Cai lai day du: alpha-beta, quiescence, bang chuyen vi Zobrist, sap xep
+ * MVV-LVA, killer moves, history heuristic, null-move pruning, late move
+ * reduction, iterative deepening - dung nhu ban Python da kiem chung.
+ * ========================================================================== */
+
+#define DIEM_MIN 0
+#define DIEM_MAX 1000
+#define BIEN_CHIEU_HET 50
+#define QUIESCENCE_TOI_DA 4
+#define PLY_TOI_DA 64
+#define TT_BIT 20
+#define TT_SO (1 << TT_BIT)
+
+typedef struct {
+    unsigned long long khoa;
+    int diem;
+    short do_sau;
+    unsigned char co;        /* 0 dung, 1 can duoi, 2 can tren */
+    int nuoc;
+} TTMuc;
+
+static TTMuc *TT = 0;
+static int KILLER[PLY_TOI_DA][2];
+static int *HISTORY = 0;         /* [o_di * 90 + o_den] */
+static double TRONG_SO_MANG = 0.4, LECH_HIEU_CHINH = 0.0;
+static long long SO_NUT = 0;
+
+static const short GIA_TRI_AN[7] = {900, 400, 200, 200, 0, 450, 100};
+
+void qs_tim_kiem_khoi_tao(double trong_so, double lech) {
+    if (!TT) TT = (TTMuc *)calloc(TT_SO, sizeof(TTMuc));
+    if (!HISTORY) HISTORY = (int *)calloc(90 * 90, sizeof(int));
+    TRONG_SO_MANG = trong_so;
+    LECH_HIEU_CHINH = lech;
+}
+
+static void xoa_heuristic(void) {
+    for (int i = 0; i < PLY_TOI_DA; i++) KILLER[i][0] = KILLER[i][1] = -1;
+    if (HISTORY) for (int i = 0; i < 90 * 90; i++) HISTORY[i] = 0;
+}
+
+static inline int diem_cuoi(int trang, int ply) {
+    int phat = ply > 1 ? ply - 1 : 0;
+    return trang ? (DIEM_MIN + phat) : (DIEM_MAX - phat);
+}
+
+static inline void di_chuyen(char *b, int mv) {
+    int from = (mv >> 8) & 127, to = mv & 127;
+    b[to] = b[from];
+    b[from] = '.';
+}
+
+/* Diem sap xep: cang NHO cang thu truoc (giong ban Python) */
+static int khoa_sap_xep(const char *b, int mv, int mv_tt, int ply) {
+    if (mv == mv_tt) return -1000000000;
+    int to = mv & 127, from = (mv >> 8) & 127;
+    char nan_nhan = b[to];
+    if (nan_nhan != '.') {
+        char kn = la_trang(nan_nhan) ? nan_nhan : (char)(nan_nhan - 32);
+        char kt = la_trang(b[from]) ? b[from] : (char)(b[from] - 32);
+        int in = chi_so_quan(kn), it = chi_so_quan(kt);
+        return -(GIA_TRI_AN[in] * 10 - GIA_TRI_AN[it]);
+    }
+    if (ply < PLY_TOI_DA) {
+        if (mv == KILLER[ply][0]) return -500;
+        if (mv == KILLER[ply][1]) return -499;
+    }
+    return -HISTORY[from * 90 + to] / 1000;
+}
+
+static void sap_xep(const char *b, int *mv, int n, int mv_tt, int ply) {
+    int khoa[256];
+    for (int i = 0; i < n; i++) khoa[i] = khoa_sap_xep(b, mv[i], mv_tt, ply);
+    for (int i = 1; i < n; i++) {          /* chen truc tiep: n nho (~40) */
+        int k = khoa[i], m = mv[i], j = i - 1;
+        while (j >= 0 && khoa[j] > k) {
+            khoa[j + 1] = khoa[j]; mv[j + 1] = mv[j]; j--;
+        }
+        khoa[j + 1] = k; mv[j + 1] = m;
+    }
+}
+
+static int danh_gia(const char *b, int trang) {
+    return qs_danh_gia_tron(b, trang, TRONG_SO_MANG, LECH_HIEU_CHINH);
+}
+
+static int quiescence(const char *b, int trang, int alpha, int beta,
+                      int ply, int ply_goc) {
+    SO_NUT++;
+    int bi_chieu = qs_bi_chieu(b, trang);
+    int dung_yen = danh_gia(b, trang);
+    if (ply >= QUIESCENCE_TOI_DA && !bi_chieu) return dung_yen;
+
+    int mv[256];
+    int n = qs_gen_legal(b, trang, mv);
+    if (n == 0) return diem_cuoi(trang, ply_goc + ply);
+
+    if (!bi_chieu) {                       /* the co yen: chi xet nuoc an quan */
+        int m = 0;
+        for (int i = 0; i < n; i++) if (b[mv[i] & 127] != '.') mv[m++] = mv[i];
+        n = m;
+        if (n == 0) return dung_yen;
+    }
+    sap_xep(b, mv, n, -1, ply_goc + ply);
+
+    char sao[90];
+    if (trang) {
+        int tot = bi_chieu ? -1000000 : dung_yen;
+        if (!bi_chieu) {
+            if (dung_yen >= beta) return dung_yen;
+            if (dung_yen > alpha) alpha = dung_yen;
+        }
+        for (int i = 0; i < n; i++) {
+            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            int sc = quiescence(sao, 0, alpha, beta, ply + 1, ply_goc);
+            if (sc > tot) tot = sc;
+            if (tot > alpha) alpha = tot;
+            if (alpha >= beta) break;
+        }
+        return tot;
+    } else {
+        int tot = bi_chieu ? 1000000 : dung_yen;
+        if (!bi_chieu) {
+            if (dung_yen <= alpha) return dung_yen;
+            if (dung_yen < beta) beta = dung_yen;
+        }
+        for (int i = 0; i < n; i++) {
+            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            int sc = quiescence(sao, 1, alpha, beta, ply + 1, ply_goc);
+            if (sc < tot) tot = sc;
+            if (tot < beta) beta = tot;
+            if (alpha >= beta) break;
+        }
+        return tot;
+    }
+}
+
+#define NULL_R 2
+#define NULL_MIN_DEPTH 3
+#define LMR_MIN_DEPTH 3
+#define LMR_SAU_NUOC 3
+
+static int co_quan_manh(const char *b, int trang) {
+    const char *m = trang ? "RHC" : "rhc";
+    for (int sq = 0; sq < 90; sq++) {
+        char p = b[sq];
+        if (p == m[0] || p == m[1] || p == m[2]) return 1;
+    }
+    return 0;
+}
+
+static void ghi_cat_tia(const char *b, int mv, int ply, int do_sau) {
+    if (b[mv & 127] != '.') return;          /* nuoc an quan da co MVV-LVA lo */
+    if (ply < PLY_TOI_DA && KILLER[ply][0] != mv) {
+        KILLER[ply][1] = KILLER[ply][0];
+        KILLER[ply][0] = mv;
+    }
+    HISTORY[((mv >> 8) & 127) * 90 + (mv & 127)] += do_sau * do_sau;
+}
+
+static int tim(const char *b, int trang, int do_sau, int alpha, int beta,
+               int ply, int cho_bo_luot, int *nuoc_ra) {
+    SO_NUT++;
+    int alpha_goc = alpha, beta_goc = beta;
+    unsigned long long khoa = qs_bam(b, trang);
+    TTMuc *muc = &TT[khoa & (TT_SO - 1)];
+    int mv_tt = -1;
+    if (muc->khoa == khoa) {
+        mv_tt = muc->nuoc;
+        if (muc->do_sau >= do_sau) {
+            if (muc->co == 0) { if (nuoc_ra) *nuoc_ra = muc->nuoc; return muc->diem; }
+            if (muc->co == 1) { if (muc->diem > alpha) alpha = muc->diem; }
+            else              { if (muc->diem < beta)  beta  = muc->diem; }
+            if (alpha >= beta) { if (nuoc_ra) *nuoc_ra = muc->nuoc; return muc->diem; }
+        }
+    }
+    if (nuoc_ra) *nuoc_ra = -1;
+    if (do_sau == 0) return quiescence(b, trang, alpha, beta, 0, ply);
+
+    int mv[256];
+    int n = qs_gen_legal(b, trang, mv);
+    if (n == 0) return diem_cuoi(trang, ply);
+
+    int bi_chieu = qs_bi_chieu(b, trang);
+    char sao[90];
+
+    /* --- Null-move pruning --- */
+    if (cho_bo_luot && ply > 0 && do_sau >= NULL_MIN_DEPTH && !bi_chieu
+            && co_quan_manh(b, trang)) {
+        int d = do_sau - 1 - NULL_R;
+        if (d > 0) {
+            if (trang) {
+                int sc = tim(b, 0, d, beta - 1, beta, ply + 1, 0, 0);
+                if (sc >= beta) return beta;
+            } else {
+                int sc = tim(b, 1, d, alpha, alpha + 1, ply + 1, 0, 0);
+                if (sc <= alpha) return alpha;
+            }
+        }
+    }
+
+    sap_xep(b, mv, n, mv_tt, ply);
+    int tot_nuoc = -1, tot_diem;
+
+    if (trang) {
+        tot_diem = -1000000;
+        for (int i = 0; i < n; i++) {
+            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            int giam = 0;
+            if (i >= LMR_SAU_NUOC && do_sau >= LMR_MIN_DEPTH && !bi_chieu
+                    && b[mv[i] & 127] == '.') {
+                giam = (i < 7) ? 1 : 2;
+                if (giam >= do_sau) giam = do_sau - 1;
+            }
+            if (giam) {
+                int sc = tim(sao, 0, do_sau - 1 - giam, alpha, alpha + 1,
+                             ply + 1, 1, 0);
+                if (sc <= alpha) continue;
+            }
+            int sc = tim(sao, 0, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            if (sc > tot_diem) { tot_diem = sc; tot_nuoc = mv[i]; }
+            if (tot_diem > alpha) alpha = tot_diem;
+            if (alpha >= beta) { ghi_cat_tia(b, mv[i], ply, do_sau); break; }
+        }
+    } else {
+        tot_diem = 1000000;
+        for (int i = 0; i < n; i++) {
+            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            int giam = 0;
+            if (i >= LMR_SAU_NUOC && do_sau >= LMR_MIN_DEPTH && !bi_chieu
+                    && b[mv[i] & 127] == '.') {
+                giam = (i < 7) ? 1 : 2;
+                if (giam >= do_sau) giam = do_sau - 1;
+            }
+            if (giam) {
+                int sc = tim(sao, 1, do_sau - 1 - giam, beta - 1, beta,
+                             ply + 1, 1, 0);
+                if (sc >= beta) continue;
+            }
+            int sc = tim(sao, 1, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            if (sc < tot_diem) { tot_diem = sc; tot_nuoc = mv[i]; }
+            if (tot_diem < beta) beta = tot_diem;
+            if (alpha >= beta) { ghi_cat_tia(b, mv[i], ply, do_sau); break; }
+        }
+    }
+
+    if (tot_nuoc < 0) {          /* moi nuoc bi LMR cat -> tim lai day du */
+        tot_diem = trang ? -1000000 : 1000000;
+        for (int i = 0; i < n; i++) {
+            memcpy(sao, b, 90); di_chuyen(sao, mv[i]);
+            int sc = tim(sao, !trang, do_sau - 1, alpha_goc, beta_goc,
+                         ply + 1, 1, 0);
+            if (trang ? (sc > tot_diem) : (sc < tot_diem)) {
+                tot_diem = sc; tot_nuoc = mv[i];
+            }
+        }
+    }
+
+    /* Diem chieu het phu thuoc do sau tuong doi -> khong luu vao bang */
+    if (tot_diem > DIEM_MIN + BIEN_CHIEU_HET && tot_diem < DIEM_MAX - BIEN_CHIEU_HET) {
+        muc->khoa = khoa; muc->diem = tot_diem; muc->do_sau = (short)do_sau;
+        muc->nuoc = tot_nuoc;
+        muc->co = (tot_diem <= alpha_goc) ? 2 : ((tot_diem >= beta_goc) ? 1 : 0);
+    }
+    if (nuoc_ra) *nuoc_ra = tot_nuoc;
+    return tot_diem;
+}
+
+/* Diem tra ve qua *diem, nuoc di la gia tri tra ve. -1 neu khong co nuoc nao. */
+int qs_tim_kiem(const char *b_in, int trang, int do_sau, int *diem, long long *so_nut) {
+    char b[90];
+    memcpy(b, b_in, 90);
+    if (!TT) qs_tim_kiem_khoi_tao(TRONG_SO_MANG, LECH_HIEU_CHINH);
+    for (int i = 0; i < TT_SO; i++) TT[i].khoa = 0;
+    xoa_heuristic();
+    SO_NUT = 0;
+    int nuoc = -1, d_cuoi = 500;
+    for (int d = 1; d <= do_sau; d++) {      /* iterative deepening */
+        int n_tmp = -1;
+        d_cuoi = tim(b, trang, d, DIEM_MIN, DIEM_MAX, 0, 1, &n_tmp);
+        if (n_tmp >= 0) nuoc = n_tmp;
+    }
+    if (diem) *diem = d_cuoi;
+    if (so_nut) *so_nut = SO_NUT;
+    return nuoc;
 }
