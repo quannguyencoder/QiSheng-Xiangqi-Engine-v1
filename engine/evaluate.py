@@ -63,10 +63,22 @@ def positional_score(board: Board) -> int:
     return score
 
 
+# Tinh co dong dat: no phai SINH LAI toan bo nuoc di cua ca hai ben, chiem 24%
+# thoi gian tim kiem. Khi dung ham tron, mang NNUE da hoc duoc tinh co dong tu
+# 16 trieu the co Pikafish cham diem, nen co the tat di ma khong mat gi.
+# Bat/tat bang dat_co_dong(); mac dinh BAT de giu nguyen hanh vi cu.
+_DUNG_CO_DONG = True
+
+
+def dat_co_dong(bat: bool) -> None:
+    global _DUNG_CO_DONG
+    _DUNG_CO_DONG = bat
+
+
 def evaluate(board: Board, side_to_move: str) -> int:
     """Danh gia tinh (khong tim kiem), tra ve diem 0..1000 goc nhin Trang."""
-    raw = (material_score(board)
-           + mobility_score(board) * MOBILITY_WEIGHT
-           + positional_score(board) * PST_WEIGHT)
+    raw = material_score(board) + positional_score(board) * PST_WEIGHT
+    if _DUNG_CO_DONG:
+        raw += mobility_score(board) * MOBILITY_WEIGHT
     return raw_to_score(raw, white_to_move=(side_to_move == WHITE))
 

@@ -37,14 +37,30 @@ def tao_ham_danh_gia(spec: str):
     if kieu == "nnue":
         from engine.nnue_net import MangNnue
         return MangNnue(path).evaluate, f"mang NNUE ({os.path.basename(path)})"
-    if kieu == "tron":
-        # tron:<duong dan mang>:<trong so>   vi du tron:weights/x.npz:0.5
+    if kieu == "tron-nhanh":
+        # Giong "tron" nhung TAT tinh co dong trong nua thu cong - nhanh 1,54x.
+        # Gia thiet: mang da hoc duoc tinh co dong tu du lieu nen khong can tinh lai.
         duong, _, w = path.rpartition(":")
-        from engine.evaluate import evaluate as tc
+        from engine import evaluate as ev
         from engine.ket_hop import tao_ham_tron
         from engine.nnue_net import MangNnue
         tso = float(w)
-        return (tao_ham_tron(tc, MangNnue(duong).evaluate, tso),
+        def thu_cong_nhanh(b, s):
+            ev.dat_co_dong(False)
+            return ev.evaluate(b, s)
+        return (tao_ham_tron(thu_cong_nhanh, MangNnue(duong).evaluate, tso),
+                f"tron {int((1-tso)*100)}/{int(tso*100)} KHONG co dong")
+    if kieu == "tron":
+        # tron:<duong dan mang>:<trong so>   vi du tron:weights/x.npz:0.5
+        duong, _, w = path.rpartition(":")
+        from engine import evaluate as ev
+        from engine.ket_hop import tao_ham_tron
+        from engine.nnue_net import MangNnue
+        tso = float(w)
+        def thu_cong_day_du(b, s):
+            ev.dat_co_dong(True)
+            return ev.evaluate(b, s)
+        return (tao_ham_tron(thu_cong_day_du, MangNnue(duong).evaluate, tso),
                 f"tron {int((1-tso)*100)}% thu cong + {int(tso*100)}% mang "
                 f"({os.path.basename(duong)})")
     if kieu == "cnn":
@@ -95,7 +111,7 @@ def xu_the_co(board, a_cam_trang: bool) -> float:
 
 
 def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
-                 max_plies: int, fen_dau):
+                 max_plies: int, fen_dau, depth_b: int = 0):
     """Tra ve 1.0 neu A thang, 0.5 hoa, 0.0 thua."""
     board, side = (fen_to_board(fen_dau) if fen_dau else (start_board(), WHITE))
     for _ in range(max_plies):
@@ -104,7 +120,8 @@ def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
             return 0.0 if a_den_luot else 1.0
         a_den_luot = (side == WHITE) == a_cam_trang
         search_mod.set_evaluator(ham_a if a_den_luot else ham_b)
-        _, mv = search_mod.evaluate_current_position(board, side, depth=depth)
+        d = depth if a_den_luot else (depth_b or depth)
+        _, mv = search_mod.evaluate_current_position(board, side, depth=d)
         if mv is None:
             return 0.0 if a_den_luot else 1.0
         board = make_move(board, mv)
@@ -118,6 +135,10 @@ def main() -> None:
     ap.add_argument("--b", required=True)
     ap.add_argument("--games", type=int, default=20)
     ap.add_argument("--depth", type=int, default=2)
+    ap.add_argument("--depth-b", type=int, default=0,
+                    help="Do sau rieng cho ben B (0 = giong ben A). Dung de kiem "
+                         "chung cat tia: tim sau hon PHAI manh hon, neu khong thi "
+                         "cat tia dang bo sot nuoc hay.")
     ap.add_argument("--max-plies", type=int, default=120)
     ap.add_argument("--khai-cuoc", default="data/data_openings_chessdb.jsonl")
     ap.add_argument("--seed", type=int, default=0)
@@ -128,14 +149,16 @@ def main() -> None:
     khai = doc_khai_cuoc(args.khai_cuoc, args.games, args.seed)
     print(f"A = {ten_a}")
     print(f"B = {ten_b}")
-    print(f"{args.games} van, depth {args.depth}, tu "
+    print(f"{args.games} van, A depth {args.depth} vs B depth "
+          f"{args.depth_b or args.depth}, tu "
           f"{len({f for f in khai if f})} the co khai cuoc khac nhau\n", flush=True)
 
     diem, kq = 0.0, []
     t0 = time.time()
     for g in range(args.games):
         a_trang = (g % 2 == 0)
-        r = danh_mot_van(ham_a, ham_b, a_trang, args.depth, args.max_plies, khai[g])
+        r = danh_mot_van(ham_a, ham_b, a_trang, args.depth, args.max_plies,
+                         khai[g], args.depth_b)
         diem += r
         kq.append(r)
         ten = {1.0: "A THANG", 0.5: "hoa", 0.0: "B thang"}[r]

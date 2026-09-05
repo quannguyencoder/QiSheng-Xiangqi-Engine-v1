@@ -19,7 +19,8 @@ import random
 from typing import Dict, List, Optional, Tuple
 
 from engine.board import (
-    Board, Move, WHITE, BLACK, legal_moves, make_move, in_check,
+    Board, Move, WHITE, BLACK, legal_moves, pseudo_legal_moves,
+    make_move, in_check,
 )
 from engine.evaluate import PIECE_VALUES
 from engine.evaluate import evaluate as handcrafted_evaluate
@@ -198,9 +199,42 @@ def quiescence(board: Board, side: str, alpha: float, beta: float,
 # Tim kiem chinh
 # --------------------------------------------------------------------------
 
+# --- Null-move pruning -------------------------------------------------
+# Y tuong: neu ta BO LUOT cho doi thu di hai nuoc lien tiep ma the co van tot
+# den muc vuot beta, thi nuoc di that su cua ta chac chan cung vuot beta -
+# khong can tim nhanh nay nua. Rat manh vi no cat ca mot nhanh, khong phai chi
+# sap xep lai.
+#
+# Ba dieu kien bat buoc, thieu mot la sai ket qua:
+#   1. Khong dang bi chieu (bo luot khi bi chieu la bi an Tuong)
+#   2. Con quan manh (Xe/Ma/Phao) - tranh zugzwang, the co ma MOI nuoc di deu
+#      lam xau di, luc do "bo luot" tot hon di that va suy luan tren sai
+#   3. Khong bo luot hai lan lien tiep
+NULL_MOVE_R = 2          # bot bao nhieu tang khi bo luot
+NULL_MOVE_MIN_DEPTH = 3
+
+# --- Late move reduction ----------------------------------------------
+# Sau khi sap xep, nhung nuoc di o CUOI danh sach gan nhu chac chan khong phai
+# nuoc tot nhat. Tim chung nong hon truoc; neu bat ngo tot thi tim lai day du.
+LMR_MIN_DEPTH = 3
+LMR_SAU_NUOC_THU = 3     # ba nuoc dau luon tim day du
+
+
+def _co_quan_manh(board: Board, side: str) -> bool:
+    """Ben do con Xe, Ma hoac Phao khong. Dung de tranh zugzwang."""
+    quan = "RHC" if side == WHITE else "rhc"
+    for r in range(10):
+        row = board[r]
+        for c in range(9):
+            if row[c] in quan:
+                return True
+    return False
+
+
 def search(board: Board, side_to_move: str, depth: int,
            alpha: float = MIN_SCORE, beta: float = MAX_SCORE,
-           tt: Optional[Dict] = None, ply: int = 0) -> Tuple[float, Optional[Move]]:
+           tt: Optional[Dict] = None, ply: int = 0,
+           cho_bo_luot: bool = True) -> Tuple[float, Optional[Move]]:
     if tt is None:
         tt = {}
     alpha_orig, beta_orig = alpha, beta
@@ -221,18 +255,59 @@ def search(board: Board, side_to_move: str, depth: int,
             if alpha >= beta:
                 return e_score, e_move
 
-    moves = legal_moves(board, side_to_move)
+    if depth == 0:
+        return quiescence(board, side_to_move, alpha, beta, 0, ply), None
+
+    # Hop le luoi bieng: sinh nuoc CHUA loc, kiem tra tinh hop le cua tung nuoc
+    # ngay truoc khi tim no. Nuoc nao bi alpha-beta cat thi khong ton mot lan
+    # in_check nao. Dem so nuoc hop le da thuc su thu de con biet chieu bi.
+    moves = pseudo_legal_moves(board, side_to_move)
     if not moves:
         return _terminal_score(side_to_move, ply), None
 
-    if depth == 0:
-        return quiescence(board, side_to_move, alpha, beta, 0, ply), None
+    doi_ben = BLACK if side_to_move == WHITE else WHITE
+    dang_bi_chieu = in_check(board, side_to_move)
+    so_hop_le = 0
+
+    # --- Null-move pruning ---
+    if (cho_bo_luot and ply > 0 and depth >= NULL_MOVE_MIN_DEPTH
+            and not dang_bi_chieu and _co_quan_manh(board, side_to_move)):
+        d_null = depth - 1 - NULL_MOVE_R
+        if d_null > 0:
+            if side_to_move == WHITE:
+                sc, _ = search(board, doi_ben, d_null, beta - 1, beta, tt,
+                               ply + 1, cho_bo_luot=False)
+                if sc >= beta:
+                    return beta, None
+            else:
+                sc, _ = search(board, doi_ben, d_null, alpha, alpha + 1, tt,
+                               ply + 1, cho_bo_luot=False)
+                if sc <= alpha:
+                    return alpha, None
 
     best_move = None
     if side_to_move == WHITE:
         best_score = -math.inf
         for mv in order_moves(board, moves, tt_move, ply):
-            sc, _ = search(make_move(board, mv), BLACK, depth - 1, alpha, beta, tt, ply + 1)
+            con = make_move(board, mv)
+            if in_check(con, side_to_move):
+                continue                      # nuoc nay lam lo Tuong -> bo
+            so_hop_le += 1
+            # --- Late move reduction ---
+            giam = 0
+            # Dem theo so nuoc HOP LE, khong theo chi so i: i con dem ca nuoc
+            # khong hop le da bi bo qua, dung no se giam nham nuoc.
+            if (so_hop_le > LMR_SAU_NUOC_THU and depth >= LMR_MIN_DEPTH
+                    and not dang_bi_chieu and board[mv[2]][mv[3]] == "."):
+                giam = 1 if so_hop_le < 7 else 2
+                if giam >= depth:
+                    giam = depth - 1
+            if giam:
+                sc, _ = search(con, BLACK, depth - 1 - giam, alpha, alpha + 1,
+                               tt, ply + 1)
+                if sc <= alpha:          # dung nhu du doan, khong can tim lai
+                    continue
+            sc, _ = search(con, BLACK, depth - 1, alpha, beta, tt, ply + 1)
             if sc > best_score:
                 best_score, best_move = sc, mv
             alpha = max(alpha, best_score)
@@ -242,13 +317,55 @@ def search(board: Board, side_to_move: str, depth: int,
     else:
         best_score = math.inf
         for mv in order_moves(board, moves, tt_move, ply):
-            sc, _ = search(make_move(board, mv), WHITE, depth - 1, alpha, beta, tt, ply + 1)
+            con = make_move(board, mv)
+            if in_check(con, side_to_move):
+                continue
+            so_hop_le += 1
+            giam = 0
+            # Dem theo so nuoc HOP LE, khong theo chi so i: i con dem ca nuoc
+            # khong hop le da bi bo qua, dung no se giam nham nuoc.
+            if (so_hop_le > LMR_SAU_NUOC_THU and depth >= LMR_MIN_DEPTH
+                    and not dang_bi_chieu and board[mv[2]][mv[3]] == "."):
+                giam = 1 if so_hop_le < 7 else 2
+                if giam >= depth:
+                    giam = depth - 1
+            if giam:
+                sc, _ = search(con, WHITE, depth - 1 - giam, beta - 1, beta,
+                               tt, ply + 1)
+                if sc >= beta:
+                    continue
+            sc, _ = search(con, WHITE, depth - 1, alpha, beta, tt, ply + 1)
             if sc < best_score:
                 best_score, best_move = sc, mv
             beta = min(beta, best_score)
             if alpha >= beta:
                 _ghi_cat_tia(mv, board, ply, depth)
                 break
+
+    if so_hop_le == 0:               # khong con nuoc hop le nao -> thua
+        return _terminal_score(side_to_move, ply), None
+
+    if best_move is None:            # moi nuoc deu bi LMR cat -> tim lai day du
+        if side_to_move == WHITE:
+            best_score = -math.inf
+            for mv in order_moves(board, moves, tt_move, ply):
+                con = make_move(board, mv)
+                if in_check(con, side_to_move):
+                    continue
+                sc, _ = search(con, BLACK, depth - 1, alpha_orig, beta_orig,
+                               tt, ply + 1)
+                if sc > best_score:
+                    best_score, best_move = sc, mv
+        else:
+            best_score = math.inf
+            for mv in order_moves(board, moves, tt_move, ply):
+                con = make_move(board, mv)
+                if in_check(con, side_to_move):
+                    continue
+                sc, _ = search(con, WHITE, depth - 1, alpha_orig, beta_orig,
+                               tt, ply + 1)
+                if sc < best_score:
+                    best_score, best_move = sc, mv
 
     # Diem chieu het phu thuoc do sau tuong doi nen khong an toan de tai su dung
     # o mot nhanh khac -> chi luu cac diem binh thuong.
@@ -270,5 +387,15 @@ def evaluate_current_position(board: Board, side_to_move: str,
     """Ham chinh: tra ve (diem cua Trang tren thang 0..1000, nuoc di tot nhat).
     depth=1 du de phat hien 'chieu het ngay trong nuoc nay' -> 1000."""
     reset_heuristics()
-    score, move = search(board, side_to_move, depth, tt={})
+    # --- Iterative deepening ---
+    # Tim depth 1 truoc, roi 2, roi 3... Nghe co ve lang phi nhung thuc te
+    # NHANH HON tim thang depth N: moi vong luu nuoc tot nhat vao transposition
+    # table, vong sau thu nuoc do TRUOC nen alpha-beta cat som hon nhieu.
+    # Ngoai ra luon co san nuoc di tot nhat cua vong truoc neu phai dung giua chung.
+    tt: Dict = {}
+    score, move = 0, None
+    for d in range(1, depth + 1):
+        score, mv = search(board, side_to_move, d, tt=tt)
+        if mv is not None:
+            move = mv
     return round(score), move
