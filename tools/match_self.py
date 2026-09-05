@@ -23,6 +23,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
+from engine import loi_c
 from engine import search as search_mod
 from engine.evaluate import material_score
 from tools.collect_openings import fen_to_board
@@ -119,17 +120,26 @@ def xu_the_co(board, a_cam_trang: bool) -> float:
 
 
 def danh_mot_van(ham_a, ham_b, a_cam_trang: bool, depth: int,
-                 max_plies: int, fen_dau, depth_b: int = 0):
-    """Tra ve 1.0 neu A thang, 0.5 hoa, 0.0 thua."""
+                 max_plies: int, fen_dau, depth_b: int = 0, cau_hinh_c=None):
+    """Tra ve 1.0 neu A thang, 0.5 hoa, 0.0 thua.
+
+    cau_hinh_c: neu khac None thi ca hai ben dung tim kiem trong C - nhanh hon
+    hang chuc lan, du de danh o depth 8-10 thay vi chi depth 1-3 nhu truoc.
+    """
     board, side = (fen_to_board(fen_dau) if fen_dau else (start_board(), WHITE))
     for _ in range(max_plies):
         if not legal_moves(board, side):
             a_den_luot = (side == WHITE) == a_cam_trang
             return 0.0 if a_den_luot else 1.0
         a_den_luot = (side == WHITE) == a_cam_trang
-        search_mod.set_evaluator(ham_a if a_den_luot else ham_b)
         d = depth if a_den_luot else (depth_b or depth)
-        _, mv = search_mod.evaluate_current_position(board, side, depth=d)
+        if cau_hinh_c is not None:
+            w, lech = cau_hinh_c[0:2] if a_den_luot else cau_hinh_c[2:4]
+            loi_c.tim_kiem_khoi_tao(w, lech)
+            _, mv, _ = loi_c.tim_kiem(board, side, d)
+        else:
+            search_mod.set_evaluator(ham_a if a_den_luot else ham_b)
+            _, mv = search_mod.evaluate_current_position(board, side, depth=d)
         if mv is None:
             return 0.0 if a_den_luot else 1.0
         board = make_move(board, mv)
@@ -150,10 +160,33 @@ def main() -> None:
     ap.add_argument("--max-plies", type=int, default=120)
     ap.add_argument("--khai-cuoc", default="data/data_openings_chessdb.jsonl")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--c", action="store_true",
+                    help="Dung tim kiem trong C cho ca hai ben (nhanh hon hang "
+                         "chuc lan). Chi ho tro dang tron:<mang>:<trong so>.")
     args = ap.parse_args()
 
-    ham_a, ten_a = tao_ham_danh_gia(args.a)
-    ham_b, ten_b = tao_ham_danh_gia(args.b)
+    cau_hinh_c = None
+    if args.c:
+        from engine.evaluate import evaluate as _tc
+        from engine.nnue_net import MangNnue
+        def _cau_hinh(spec):
+            kieu, _, path = spec.partition(":")
+            if kieu not in ("tron", "tron-c"):
+                raise SystemExit("--c chi ho tro dang tron:<mang>:<trong so>")
+            duong, _, w = path.rpartition(":")
+            w = float(w)
+            net = MangNnue(duong)
+            loi_c.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
+            b0 = start_board()
+            lech = 505.0 - ((1 - w) * _tc(b0, "w") + w * net.evaluate(b0, "w"))
+            return w, lech, f"tron {int((1-w)*100)}/{int(w*100)} (C)"
+        wa, la_, ten_a = _cau_hinh(args.a)
+        wb, lb, ten_b = _cau_hinh(args.b)
+        cau_hinh_c = (wa, la_, wb, lb)
+        ham_a = ham_b = None
+    else:
+        ham_a, ten_a = tao_ham_danh_gia(args.a)
+        ham_b, ten_b = tao_ham_danh_gia(args.b)
     khai = doc_khai_cuoc(args.khai_cuoc, args.games, args.seed)
     print(f"A = {ten_a}")
     print(f"B = {ten_b}")
@@ -166,7 +199,7 @@ def main() -> None:
     for g in range(args.games):
         a_trang = (g % 2 == 0)
         r = danh_mot_van(ham_a, ham_b, a_trang, args.depth, args.max_plies,
-                         khai[g], args.depth_b)
+                         khai[g], args.depth_b, cau_hinh_c)
         diem += r
         kq.append(r)
         ten = {1.0: "A THANG", 0.5: "hoa", 0.0: "B thang"}[r]

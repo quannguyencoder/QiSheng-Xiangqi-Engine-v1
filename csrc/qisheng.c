@@ -538,8 +538,11 @@ static int quy_doi(double tho, int trang) {
 }
 
 /* Danh gia TRON: (1-w) * thu cong + w * mang + lech, tat ca trong mot lan goi. */
+static double trong_so_theo_pha(const char *b, double mac_dinh);
+
 static int danh_gia_voi_acc(const char *b, int trang, const float *acc,
                             double trong_so_mang, double lech) {
+    trong_so_mang = trong_so_theo_pha(b, trong_so_mang);
     int a = quy_doi((double)qs_danh_gia_tho(b), trang);
     double bnn = (double)nnue_tu_acc(acc, trang) * 1000.0;
     if (bnn < 1.0) bnn = 1.0;
@@ -551,7 +554,50 @@ static int danh_gia_voi_acc(const char *b, int trang, const float *acc,
     return (int)r;
 }
 
+/* Trong so mang theo GIAI DOAN.
+ *
+ * Do tren 1.175 the co: ti le chon dung nuoc tot nhat cua Pikafish dat dinh o
+ * trong so KHAC NHAU tuy giai doan, va nguoc chieu nhau:
+ *     khai cuoc  w=0,8 -> 26,6%   (w=0,4 chi 23,4%)
+ *     trung cuoc w=0,8 -> 24,3%   (w=0,4 chi 22,4%)
+ *     tan cuoc   w=0,2 -> 29,1%   (w=0,4 chi 27,7%)
+ * Tan cuoc it quan, dem vat chat va vi tri la tin hieu ro rang, con mang thay
+ * it mau tuong tu hon nen nhieu.
+ *
+ * NHUNG DAU THAT LAI THUA: 40 van depth 6 cho 33,8%, tuc Elo -117 (khoang tin
+ * cay -251…-11, KHONG chua 0). Trong so co dinh 0,4 manh hon han.
+ * Day la lan thu ba mot chi so gian tiep danh lua: "ti le chon dung nuoc di"
+ * cung khong bao dam luc co, chi co dau doi khang moi noi that.
+ * Giu code lai de khong ai thu lai, nhung MAC DINH TAT.
+ */
+static int KEO_DAI_CHIEU = 1;      /* keo dai mot tang khi nuoc di gay chieu */
+
+void qs_dat_keo_dai(int bat) { KEO_DAI_CHIEU = bat; }
+
+static int DUNG_THEO_PHA = 0;
+static double W_KHAI = 0.8, W_TRUNG = 0.8, W_TAN = 0.2;
+
+void qs_dat_theo_pha(int bat, double w_khai, double w_trung, double w_tan) {
+    DUNG_THEO_PHA = bat;
+    W_KHAI = w_khai; W_TRUNG = w_trung; W_TAN = w_tan;
+}
+
+static int dem_quan(const char *b) {
+    int n = 0;
+    for (int sq = 0; sq < 90; sq++) if (b[sq] != '.') n++;
+    return n;
+}
+
+static double trong_so_theo_pha(const char *b, double mac_dinh) {
+    if (!DUNG_THEO_PHA) return mac_dinh;
+    int n = dem_quan(b);
+    if (n >= 28) return W_KHAI;
+    if (n >= 16) return W_TRUNG;
+    return W_TAN;
+}
+
 int qs_danh_gia_tron(const char *b, int trang, double trong_so_mang, double lech) {
+    trong_so_mang = trong_so_theo_pha(b, trong_so_mang);
     int a = quy_doi((double)qs_danh_gia_tho(b), trang);
     double bnn = (double)nnue_tho(b, trang) * 1000.0;
     if (bnn < 1.0) bnn = 1.0;
@@ -853,6 +899,10 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
             }
             acc_xuong(ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
+            /* Keo dai khi chieu: neu nuoc nay chieu doi phuong thi tim them
+               mot tang. Cac chuoi chieu thuong dan toi bat quan hoac chieu het,
+               cat chung o do sau co dinh la de bo sot. */
+            int them = (KEO_DAI_CHIEU && qs_bi_chieu(b, 0)) ? 1 : 0;
             int bo_qua = 0;
             if (giam) {
                 int sc = tim(b, 0, do_sau - 1 - giam, alpha, alpha + 1,
@@ -860,7 +910,7 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
                 if (sc <= alpha) bo_qua = 1;
             }
             int sc = 0;
-            if (!bo_qua) sc = tim(b, 0, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            if (!bo_qua) sc = tim(b, 0, do_sau - 1 + them, alpha, beta, ply + 1, 1, 0);
             b[from] = q_di; b[to] = q_an;
             if (bo_qua) continue;
             if (sc > tot_diem) { tot_diem = sc; tot_nuoc = mv[i]; }
@@ -882,6 +932,7 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
             }
             acc_xuong(ply, q_di, from, to, q_an);
             b[to] = q_di; b[from] = '.';
+            int them = (KEO_DAI_CHIEU && qs_bi_chieu(b, 1)) ? 1 : 0;
             int bo_qua = 0;
             if (giam) {
                 int sc = tim(b, 1, do_sau - 1 - giam, beta - 1, beta,
@@ -889,7 +940,7 @@ static int tim(char *b, int trang, int do_sau, int alpha, int beta,
                 if (sc >= beta) bo_qua = 1;
             }
             int sc = 0;
-            if (!bo_qua) sc = tim(b, 1, do_sau - 1, alpha, beta, ply + 1, 1, 0);
+            if (!bo_qua) sc = tim(b, 1, do_sau - 1 + them, alpha, beta, ply + 1, 1, 0);
             b[from] = q_di; b[to] = q_an;
             if (bo_qua) continue;
             if (sc < tot_diem) { tot_diem = sc; tot_nuoc = mv[i]; }

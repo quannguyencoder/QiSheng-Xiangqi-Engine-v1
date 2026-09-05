@@ -56,6 +56,9 @@ def _nap() -> Optional[ctypes.CDLL]:
                                 ctypes.POINTER(ctypes.c_int),
                                 ctypes.POINTER(ctypes.c_longlong)]
     lib.qs_tim_kiem_khoi_tao.argtypes = [ctypes.c_double, ctypes.c_double]
+    lib.qs_dat_keo_dai.argtypes = [ctypes.c_int]
+    lib.qs_dat_theo_pha.argtypes = [ctypes.c_int, ctypes.c_double,
+                                    ctypes.c_double, ctypes.c_double]
     lib.qs_nnue_nap.restype = ctypes.c_int
     lib.qs_nnue_nap.argtypes = [F, F, F, F, F, ctypes.c_float,
                                 ctypes.c_int, ctypes.c_int]
@@ -187,3 +190,15 @@ def tim_kiem(board: Board, side: str, depth: int):
                             ctypes.byref(_diem_ra), ctypes.byref(_nut_ra))
     nuoc = None if ma < 0 else _GIAI_MA[ma]
     return _diem_ra.value, nuoc, _nut_ra.value
+
+
+def dat_theo_pha(bat: bool, w_khai: float = 0.8, w_trung: float = 0.8,
+                 w_tan: float = 0.2) -> None:
+    """Bat/tat trong so mang theo giai doan van co."""
+    _nap().qs_dat_theo_pha(1 if bat else 0, ctypes.c_double(w_khai),
+                           ctypes.c_double(w_trung), ctypes.c_double(w_tan))
+
+
+def dat_keo_dai(bat: bool) -> None:
+    """Bat/tat keo dai mot tang khi nuoc di gay chieu."""
+    _nap().qs_dat_keo_dai(1 if bat else 0)

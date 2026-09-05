@@ -26,9 +26,12 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.board import WHITE, BLACK, start_board, legal_moves, make_move
+from engine import loi_c
 from engine.search import evaluate_current_position
 from tools.collect_openings import board_to_fen, fen_to_board, iccs_to_move
 from tools.label_pikafish import EngineTreo
+
+_DUNG_C = False
 
 
 class Pikafish:
@@ -161,7 +164,10 @@ def play_game(eng: Pikafish, qisheng_is_white: bool, depth: int, max_plies: int,
             return 0.0 if qisheng_to_move else 1.0
 
         if (side == WHITE) == qisheng_is_white:
-            _, mv = evaluate_current_position(board, side, depth=depth)
+            if _DUNG_C:
+                _, mv, _ = loi_c.tim_kiem(board, side, depth)
+            else:
+                _, mv = evaluate_current_position(board, side, depth=depth)
             if mv is None:
                 return 0.0
         else:
@@ -198,12 +204,29 @@ def main() -> None:
     ap.add_argument("--khai-cuoc", default="data/data_openings_chessdb.jsonl",
                     help="Kho the co khai cuoc de moi van bat dau mot kieu khac")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--manh-nhat", action="store_true",
+                    help="Cau hinh manh nhat: tim kiem + danh gia trong C")
+    ap.add_argument("--mang", default="weights/nnue_tanh.npz")
+    ap.add_argument("--trong-so", type=float, default=0.4)
     ap.add_argument("--nnue", default=None, help="Dung mang CNN (.npz) thay danh gia thu cong")
     ap.add_argument("--nnue-net", default=None, help="Dung mang NNUE (.npz) thay danh gia thu cong")
     args = ap.parse_args()
 
+    global _DUNG_C
     from engine.search import set_evaluator
-    if args.nnue_net:
+    if args.manh_nhat:
+        # Cau hinh manh nhat: tim kiem + danh gia deu trong C
+        from engine.evaluate import evaluate as _tc
+        from engine.nnue_net import MangNnue
+        net = MangNnue(args.mang)
+        loi_c.nap_mang(net.w1, net.b1, net.w2, net.b2, net.w3, net.b3)
+        b0 = start_board()
+        w = args.trong_so
+        lech = 505.0 - ((1 - w) * _tc(b0, "w") + w * net.evaluate(b0, "w"))
+        loi_c.tim_kiem_khoi_tao(w, lech)
+        _DUNG_C = True
+        print(f"Danh gia: tron {int((1-w)*100)}/{int(w*100)} (tim kiem trong C)")
+    elif args.nnue_net:
         from engine.nnue_net import MangNnue
         set_evaluator(MangNnue(args.nnue_net).evaluate)
         print(f"Danh gia: mang NNUE ({args.nnue_net})")
