@@ -1089,3 +1089,33 @@ static int xw_tim_kiem_noi_bo(const char *b_in, int trang, int do_sau,
     if (so_nut) *so_nut = SO_NUT;
     return nuoc;
 }
+
+
+/* --- Bien chinh (principal variation) ---
+ * Chuoi nuoc di ma engine cho la se xay ra neu ca hai ben danh tot nhat.
+ * Lay bang cach di theo nuoc tot nhat luu trong bang chuyen vi. Khong ton them
+ * lan tim kiem nao vi bang da co san sau khi tim xong.
+ * Dung ngan xep de tranh lap vo tan khi the co lap lai. */
+int xw_bien_chinh(const char *b_in, int trang, int *out, int toi_da) {
+    char b[90];
+    memcpy(b, b_in, 90);
+    unsigned long long da_qua[32];
+    int n = 0;
+    while (n < toi_da) {
+        unsigned long long k = xw_bam(b, trang);
+        for (int i = 0; i < n; i++) if (da_qua[i] == k) return n;  /* lap -> dung */
+        da_qua[n] = k;
+        TTMuc *m = &TT[k & (TT_SO - 1)];
+        if (m->khoa != k || m->nuoc < 0) return n;
+        int mv[256];
+        int so = xw_gen_legal(b, trang, mv);
+        int hop_le = 0;
+        for (int i = 0; i < so; i++) if (mv[i] == m->nuoc) { hop_le = 1; break; }
+        if (!hop_le) return n;
+        out[n++] = m->nuoc;
+        int from = (m->nuoc >> 8) & 127, to = m->nuoc & 127;
+        b[to] = b[from]; b[from] = '.';
+        trang = !trang;
+    }
+    return n;
+}

@@ -55,6 +55,9 @@ def _nap() -> Optional[ctypes.CDLL]:
     lib.xw_tim_kiem.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int,
                                 ctypes.POINTER(ctypes.c_int),
                                 ctypes.POINTER(ctypes.c_longlong)]
+    lib.xw_bien_chinh.restype = ctypes.c_int
+    lib.xw_bien_chinh.argtypes = [ctypes.c_char_p, ctypes.c_int,
+                                  ctypes.POINTER(ctypes.c_int), ctypes.c_int]
     lib.xw_tim_kiem_theo_gio.restype = ctypes.c_int
     lib.xw_tim_kiem_theo_gio.argtypes = [
         ctypes.c_char_p, ctypes.c_int, ctypes.c_double, ctypes.c_int,
@@ -228,3 +231,14 @@ def tim_kiem_theo_gio(board: Board, side: str, giay: float = 10.0,
         ctypes.byref(_do_sau_ra))
     nuoc = None if ma < 0 else _GIAI_MA[ma]
     return _diem_ra.value, nuoc, _nut_ra.value, _do_sau_ra.value
+
+
+_bien = (ctypes.c_int * 24)()
+
+
+def bien_chinh(board: Board, side: str, toi_da: int = 12):
+    """Chuoi nuoc di engine du tinh se xay ra. Lay tu bang chuyen vi, khong ton
+    them lan tim kiem nao. Phai goi NGAY SAU tim_kiem thi bang moi con du lieu."""
+    n = _nap().xw_bien_chinh(_sang_c(board), 1 if side == WHITE else 0,
+                             _bien, toi_da)
+    return [_GIAI_MA[_bien[i]] for i in range(n)]

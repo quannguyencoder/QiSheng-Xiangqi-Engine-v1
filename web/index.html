@@ -3,459 +3,506 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>XuanWu — Cờ tướng</title>
+<title>XuanWu 玄武 — Xiangqi</title>
+<link rel="icon" href="mascot.png">
 <style>
   :root{
-    --go:#e0bc85; --luoi:#8b5e34; --do:#c0392b; --den:#1c1c1c;
-    --nen:#22252b; --chu:#e8e6e3; --mo:#8b909a; --vien:#3a3f47;
+    --go:#dfb87f; --luoi:#8b5e34; --do:#c0392b; --den:#1c1c1c;
+    --nen:#16181d; --the:#20242b; --vien:#2f343d;
+    --chu:#e8e6e3; --mo:#8b909a; --xanh:#4ade80;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--nen);color:var(--chu);
-       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-  .khung{display:flex;gap:22px;padding:22px;align-items:flex-start;
-         justify-content:center;flex-wrap:wrap}
+       font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .khung{display:flex;gap:18px;padding:18px;align-items:flex-start;
+         justify-content:center;flex-wrap:wrap;max-width:1500px;margin:0 auto}
 
-  /* thanh danh gia kieu chess.com */
-  .thanh{width:26px;height:620px;background:var(--den);border-radius:5px;
+  .thanh{width:24px;height:620px;background:#111;border-radius:4px;
          position:relative;overflow:hidden;flex-shrink:0;border:1px solid var(--vien)}
-  .thanh-trang{position:absolute;left:0;right:0;bottom:0;background:#f0ece4;
-               transition:height .45s cubic-bezier(.4,0,.2,1)}
-  .thanh-so{position:absolute;left:0;right:0;text-align:center;font-size:10px;
+  .thanh-do{position:absolute;left:0;right:0;bottom:0;background:#f2ede4;
+            transition:height .4s cubic-bezier(.4,0,.2,1)}
+  .thanh-so{position:absolute;left:0;right:0;text-align:center;font-size:9px;
             font-weight:700;font-variant-numeric:tabular-nums}
-  .thanh-tren{top:4px;color:#e8e6e3}
-  .thanh-duoi{bottom:4px;color:#1c1c1c}
-  .thanh-giua{position:absolute;left:0;right:0;top:50%;height:1px;
-              background:rgba(192,57,43,.55)}
+  .thanh-tren{top:4px;color:#ccc} .thanh-duoi{bottom:4px;color:#111}
+  .thanh-giua{position:absolute;left:0;right:0;top:50%;height:1px;background:#c0392b88}
 
-  /* ban co */
-  .ban{position:relative;background:var(--go);border-radius:6px;
-       box-shadow:0 6px 26px rgba(0,0,0,.45);flex-shrink:0}
+  .ban{position:relative;background:var(--go);border-radius:5px;
+       box-shadow:0 8px 30px #0007;flex-shrink:0}
   .ban svg{display:block}
-  .quan{position:absolute;z-index:4;border-radius:50%;display:flex;align-items:center;
-        justify-content:center;font-weight:700;cursor:pointer;user-select:none;
-        transition:transform .16s, box-shadow .16s;
-        background:radial-gradient(circle at 34% 30%,#fdf6e8,#e6d3ae 72%);
-        box-shadow:0 2px 5px rgba(0,0,0,.4)}
-  .quan:hover{transform:scale(1.07)}
+  .lop-bam{position:absolute;inset:0;z-index:3;cursor:pointer}
+  .quan{position:absolute;z-index:4;border-radius:50%;display:flex;
+        align-items:center;justify-content:center;font-weight:700;cursor:pointer;
+        user-select:none;transition:transform .15s,box-shadow .15s;
+        background:radial-gradient(circle at 34% 30%,#fdf7ea,#e4d0a9 72%);
+        box-shadow:0 2px 5px #0006}
+  .quan:hover{transform:scale(1.06)}
   .quan.do{color:var(--do);border:2px solid var(--do)}
   .quan.den{color:var(--den);border:2px solid var(--den)}
-  .quan.chon{box-shadow:0 0 0 3px #f1c40f,0 2px 8px rgba(0,0,0,.5);
-             transform:scale(1.07)}
-  .quan.vua-di{box-shadow:0 0 0 3px #3498db,0 2px 8px rgba(0,0,0,.5)}
-  .cham{position:absolute;border-radius:50%;background:rgba(46,204,113,.62);
-        pointer-events:none}
-  /* O an quan: vong do day, co nhip dap de nhin ra ngay giua cac cham xanh */
-  .cham.an{background:rgba(231,76,60,.16);border:4px solid #e74c3c;
-           box-sizing:border-box;animation:dap 1.1s ease-in-out infinite}
-  @keyframes dap{0%,100%{transform:scale(1);opacity:.95}
-                 50%{transform:scale(1.09);opacity:.65}}
+  .quan.chon{box-shadow:0 0 0 3px #f1c40f,0 2px 8px #0008;transform:scale(1.06)}
+  .quan.vua-di{box-shadow:0 0 0 3px #4a9eff,0 2px 8px #0008}
   .quan.se-bi-an{animation:rung .55s ease-in-out infinite}
-  @keyframes rung{0%,100%{transform:scale(1.07) rotate(0)}
-                  25%{transform:scale(1.07) rotate(-4deg)}
-                  75%{transform:scale(1.07) rotate(4deg)}}
+  @keyframes rung{0%,100%{transform:scale(1.06) rotate(0)}
+                  25%{transform:scale(1.06) rotate(-4deg)}
+                  75%{transform:scale(1.06) rotate(4deg)}}
   .quan.bay{transition:left .26s cubic-bezier(.34,1.3,.5,1),
-                       top  .26s cubic-bezier(.34,1.3,.5,1);z-index:9}
+                       top .26s cubic-bezier(.34,1.3,.5,1);z-index:9}
+  .cham{position:absolute;border-radius:50%;background:#2ecc7199;pointer-events:none}
+  .cham.an{background:#e74c3c28;border:4px solid #e74c3c;box-sizing:border-box;
+           animation:dap 1.1s ease-in-out infinite}
+  @keyframes dap{0%,100%{transform:scale(1);opacity:.95}
+                 50%{transform:scale(1.08);opacity:.6}}
   .mui-ten{position:absolute;inset:0;pointer-events:none;z-index:5}
-  /* Lop nhan bam phu ca ban co. Can no vi O TRONG khong co phan tu nao de bam:
-     quan co co su kien onclick, con o trong thi khong, nen truoc day chon duoc
-     quan ma bam vao o dich lai khong co gi xay ra. */
-  .lop-bam{position:absolute;inset:0;z-index:3;cursor:pointer}
 
-  /* bang dieu khien */
-  .ben{width:270px;display:flex;flex-direction:column;gap:14px}
-  .the{background:#2a2e35;border:1px solid var(--vien);border-radius:8px;padding:14px}
-  .the h2{margin:0 0 10px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
-          color:var(--mo);font-weight:600}
-  button{width:100%;padding:9px;margin-bottom:7px;background:#343945;
-         border:1px solid var(--vien);color:var(--chu);border-radius:6px;
-         cursor:pointer;font-size:14px;font-family:inherit}
-  button:hover{background:#3d4350}
+  .ben{width:380px;display:flex;flex-direction:column;gap:12px}
+  .the{background:var(--the);border:1px solid var(--vien);border-radius:10px;padding:15px}
+  .dau{display:flex;align-items:center;gap:12px}
+  .dau img{width:44px;height:44px;border-radius:9px}
+  .dau h1{margin:0;font-size:17px;font-weight:650}
+  .dau .p{color:var(--mo);font-size:12.5px}
+  .nn{margin-left:auto;display:flex;gap:4px}
+  .nn button{padding:5px 9px;font-size:11px;width:auto;margin:0;border-radius:6px}
+  .nn button.on{background:var(--do);border-color:var(--do);color:#fff}
+
+  .diem-to{font-size:44px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
+  .diem-to small{font-size:15px;color:var(--mo);font-weight:400}
+  .nhan{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;
+        background:#3a3f49;color:var(--chu);margin-top:9px}
+
+  h2{margin:0 0 9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+     color:var(--mo);font-weight:600}
+  .nuoc-to{font-size:23px;font-weight:700;color:var(--xanh);
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .pv{color:var(--mo);font-size:12.5px;line-height:1.9;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+  .pv b{color:var(--chu)}
+  .ky{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;font-size:13px}
+  .ky span:nth-child(odd){color:var(--mo)}
+  .ky span:nth-child(even){font-variant-numeric:tabular-nums}
+
+  button,select,input{font-family:inherit;font-size:13.5px;background:#2b3038;
+        border:1px solid var(--vien);color:var(--chu);border-radius:7px;padding:8px}
+  button{cursor:pointer} button:hover{background:#343a44}
   button.chinh{background:var(--do);border-color:var(--do);font-weight:600}
   button.chinh:hover{background:#d0432f}
-  select{width:100%;padding:8px;background:#343945;border:1px solid var(--vien);
-         color:var(--chu);border-radius:6px;font-size:14px;font-family:inherit}
-  .tt{font-size:14px;min-height:44px}
-  .tt b{color:#f1c40f}
-  .ds{font-size:13px;max-height:270px;overflow-y:auto;
-      font-variant-numeric:tabular-nums;line-height:1.9}
+  .hang{display:flex;gap:7px;margin-bottom:8px}
+  .hang>*{flex:1;min-width:0}
+  .ds{font-size:13px;max-height:200px;overflow-y:auto;
+      font-variant-numeric:tabular-nums;line-height:1.85}
   .ds div{display:flex;gap:10px}
   .ds span:first-child{color:var(--mo);width:26px;flex-shrink:0}
-  .ky{color:var(--mo);font-size:12px;line-height:1.8}
-  .ky b{color:var(--chu);font-weight:600}
-  h1{margin:0;font-size:19px;letter-spacing:.03em}
-  h1 small{color:var(--mo);font-weight:400;font-size:13px;letter-spacing:0}
+  .fen{font-family:ui-monospace,Menlo,monospace;font-size:11px;width:100%}
+  .chia{color:var(--mo);font-size:11.5px;margin-top:9px;
+        font-family:ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
 <div class="khung">
   <div class="thanh">
-    <div class="thanh-trang" id="thanhTrang" style="height:50.5%"></div>
+    <div class="thanh-do" id="thanhDo" style="height:50.5%"></div>
     <div class="thanh-giua"></div>
     <div class="thanh-so thanh-tren" id="soDen">495</div>
-    <div class="thanh-so thanh-duoi" id="soTrang">505</div>
+    <div class="thanh-so thanh-duoi" id="soDo">505</div>
   </div>
 
   <div class="ban" id="ban"></div>
 
   <div class="ben">
-    <div class="the">
-      <h1>玄武 XuanWu <small>Cờ tướng</small></h1>
+    <div class="the dau">
+      <img src="mascot.png" alt="XuanWu">
+      <div>
+        <h1>XuanWu 玄武</h1>
+        <div class="p"><span id="tTieuDe">Bàn phân tích</span> —
+          <span id="tPhu">thang 0–1000 cho Đỏ</span></div>
+      </div>
+      <div class="nn">
+        <button onclick="datNN('vi')" id="nnvi" class="on">VI</button>
+        <button onclick="datNN('en')" id="nnen">EN</button>
+        <button onclick="datNN('zh')" id="nnzh">中</button>
+      </div>
     </div>
+
     <div class="the">
-      <h2>Trạng thái</h2>
-      <div class="tt" id="tt">Bấm “Ván mới” để bắt đầu</div>
+      <div class="diem-to"><span id="diemTo">505</span><small> / 1000</small></div>
+      <div id="nhanDiem" class="nhan">Cân bằng</div>
+      <div id="ttVan" style="margin-top:9px;font-size:13.5px"></div>
     </div>
+
     <div class="the">
-      <h2>Điều khiển</h2>
-      <button class="chinh" onclick="vanMoi()">Ván mới</button>
-      <select id="cheDo" onchange="doiCheDo()" style="margin-bottom:7px">
-        <option value="may" selected>Chơi với máy</option>
-        <option value="tu">Tự chơi hai bên — có mũi tên gợi ý</option>
-      </select>
-      <select id="mucDo">
-        <option value="de">Dễ — nghĩ 0,5 giây</option>
-        <option value="vua" selected>Vừa — nghĩ 3 giây</option>
-        <option value="kho">Khó — nghĩ 10 giây</option>
-      </select>
+      <h2><span id="tNuocTot">Nước tốt nhất cho</span> <b id="benTot">Đỏ</b></h2>
+      <div class="nuoc-to" id="nuocTot">—</div>
+      <div class="pv" id="pv"></div>
+      <div style="margin-top:8px;font-size:12.5px;color:var(--mo)">
+        <span id="tVuaDi">Nước vừa đi</span> <b id="vuaDiTxt">—</b>
+        <span id="nhanSach" class="nhan" style="display:none;margin:0 0 0 6px">Theo sách</span>
+        <span id="chamNuoc"></span>
+      </div>
     </div>
+
     <div class="the">
-      <h2>Nước vừa đi</h2>
-      <div id="cham" style="font-size:14px;min-height:22px">—</div>
+      <div class="ky" id="bangKy"></div>
     </div>
+
     <div class="the">
-      <h2>Nước đi</h2>
+      <div class="hang">
+        <select id="cheDo" onchange="doiCheDo()"></select>
+        <select id="mucDo" onchange="neuTuChoi()"></select>
+      </div>
+      <div class="hang">
+        <select id="benCam" onchange="vanMoi()"></select>
+      </div>
+      <div class="hang">
+        <button onclick="lui()" id="bLui">↰ Lùi</button>
+        <button class="chinh" onclick="vanMoi()" id="bMoi">Ván mới</button>
+        <button onclick="xoayBan()" id="bXoay">⇅ Xoay</button>
+      </div>
+      <div class="hang">
+        <button onclick="diGoiY()" id="bGoiY">▶ Đi nước gợi ý</button>
+      </div>
+      <div class="hang">
+        <input class="fen" id="oFen" placeholder="FEN">
+        <button onclick="napFen()" id="bFen" style="flex:0 0 90px">Nạp FEN</button>
+      </div>
+      <div class="chia" id="chiaSe"></div>
+    </div>
+
+    <div class="the">
+      <h2 id="tNuocDaDi">Nước đã đi</h2>
       <div class="ds" id="ds"></div>
-    </div>
-    <div class="the">
-      <h2>Kỹ thuật</h2>
-      <div class="ky" id="ky">—</div>
     </div>
   </div>
 </div>
 
+<script src="lang.js"></script>
 <script>
-const O = 62, LE = 34;               // khoang cach o va le ban co
-const TEN = {R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
-             K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
-let van = null, banCo = null, chon = null, hopLe = [], vuaDi = null, dangCho = false;
-let benDi = 'trang', goiY = null;          // goiY: [r0,c0,r1,c1] de ve mui ten
-let diemTruoc = 505;                       // de cham chat luong nuoc di
-let phienGoiY = 0;                         // bo qua ket qua goi y den muon
+const O=62, LE=34;
+const TEN={R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
+           K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
+let van=null, banCo=null, chon=null, hopLe=[], vuaDi=null, dangCho=false;
+let benDi='trang', goiY=null, xoay=false, diemTruoc=505, phien=0, lichSu=[];
+let nn='vi', T=NGON_NGU.vi;
 
-function tuChoi(){ return document.getElementById('cheDo').value === 'tu'; }
+const tuChoi=()=>document.getElementById('cheDo').value==='tu';
+const raMH=(r,c)=>xoay?[9-r,8-c]:[r,c];
+const tuMH=(r,c)=>xoay?[9-r,8-c]:[r,c];
+const kyHieu=m=>m?`${'abcdefghi'[m[1]]}${9-m[0]}${'abcdefghi'[m[3]]}${9-m[2]}`:'—';
+
+// --- Am thanh: tep da cat khoang lang, phat NGAY khi quan bat dau truot ---
+const TEP={}; const AM={di:.75,an:.95,chieu:.6,het:.5};
+for(const [k,f] of Object.entries({di:'sound-move.wav',an:'sound-capture.wav',
+    chieu:'sound-check.wav',het:'sound-win.wav'})){
+  const a=new Audio(f); a.preload='auto'; a.load(); TEP[k]=a;
+}
+function amThanh(k){ try{ const a=TEP[k].cloneNode(); a.volume=AM[k]??.7;
+  a.play().catch(()=>{}); }catch(e){} }
+
+// --- Ngon ngu ---
+function datNN(m){
+  nn=m; T=NGON_NGU[m];
+  document.documentElement.lang=m;
+  ['vi','en','zh'].forEach(x=>document.getElementById('nn'+x)
+    .classList.toggle('on', x===m));
+  document.getElementById('tTieuDe').textContent=T.tieu_de;
+  document.getElementById('tPhu').textContent=T.phu;
+  document.getElementById('tNuocTot').textContent=T.nuoc_tot;
+  document.getElementById('tVuaDi').textContent=T.nuoc_vua_di;
+  document.getElementById('tNuocDaDi').textContent=T.nuoc_da_di;
+  document.getElementById('nhanSach').textContent=T.theo_sach;
+  document.getElementById('bLui').textContent='↰ '+T.lui;
+  document.getElementById('bMoi').textContent=T.van_moi;
+  document.getElementById('bXoay').textContent='⇅ '+T.xoay;
+  document.getElementById('bGoiY').textContent='▶ '+T.di_goi_y;
+  document.getElementById('bFen').textContent=T.nap_fen;
+  const dat=(id,ds)=>{const e=document.getElementById(id), g=e.value;
+    e.innerHTML=ds.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+    if(g) e.value=g;};
+  dat('cheDo',[['may',T.choi_may],['tu',T.tu_choi]]);
+  dat('mucDo',[['de',T.de],['vua',T.vua],['kho',T.kho]]);
+  dat('benCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]]);
+  localStorage.setItem('nn',m);
+  if(banCo) veLai();
+}
 
 function veBan(){
-  const w = LE*2 + O*8, h = LE*2 + O*9;
-  let s = `<svg width="${w}" height="${h}">`;
-  for(let r=0;r<10;r++)
-    s += `<line x1="${LE}" y1="${LE+r*O}" x2="${LE+8*O}" y2="${LE+r*O}"
-           stroke="var(--luoi)" stroke-width="1.4"/>`;
+  const w=LE*2+O*8, h=LE*2+O*9;
+  let s=`<svg width="${w}" height="${h}">`;
+  for(let r=0;r<10;r++) s+=`<line x1="${LE}" y1="${LE+r*O}" x2="${LE+8*O}"
+    y2="${LE+r*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
   for(let c=0;c<9;c++){
-    if(c===0||c===8)
-      s += `<line x1="${LE+c*O}" y1="${LE}" x2="${LE+c*O}" y2="${LE+9*O}"
-             stroke="var(--luoi)" stroke-width="1.4"/>`;
-    else{
-      s += `<line x1="${LE+c*O}" y1="${LE}" x2="${LE+c*O}" y2="${LE+4*O}"
-             stroke="var(--luoi)" stroke-width="1.4"/>`;
-      s += `<line x1="${LE+c*O}" y1="${LE+5*O}" x2="${LE+c*O}" y2="${LE+9*O}"
-             stroke="var(--luoi)" stroke-width="1.4"/>`;
-    }
+    if(c===0||c===8) s+=`<line x1="${LE+c*O}" y1="${LE}" x2="${LE+c*O}"
+      y2="${LE+9*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
+    else{ s+=`<line x1="${LE+c*O}" y1="${LE}" x2="${LE+c*O}" y2="${LE+4*O}"
+      stroke="var(--luoi)" stroke-width="1.4"/><line x1="${LE+c*O}"
+      y1="${LE+5*O}" x2="${LE+c*O}" y2="${LE+9*O}" stroke="var(--luoi)"
+      stroke-width="1.4"/>`; }
   }
-  // cung chin o
-  const cheo=(r1,r2)=>`<line x1="${LE+3*O}" y1="${LE+r1*O}" x2="${LE+5*O}"
-      y2="${LE+r2*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
-  s += cheo(0,2)+cheo(2,0)+cheo(7,9)+cheo(9,7);
-  s += `<text x="${LE+2*O}" y="${LE+4.62*O}" fill="var(--luoi)"
-         font-size="21" font-family="serif" opacity=".8">楚河</text>`;
-  s += `<text x="${LE+5.3*O}" y="${LE+4.62*O}" fill="var(--luoi)"
-         font-size="21" font-family="serif" opacity=".8">漢界</text>`;
-  s += `</svg>`;
-  const b = document.getElementById('ban');
-  b.innerHTML = s;
-  const lop = document.createElement('div');
-  lop.className = 'lop-bam';
-  lop.onclick = e => {
-    const hop = b.getBoundingClientRect();
-    // quy toa do con tro ve giao diem gan nhat
-    const c = Math.round((e.clientX - hop.left - LE) / O);
-    const r = Math.round((e.clientY - hop.top  - LE) / O);
-    if(r < 0 || r > 9 || c < 0 || c > 8) return;
-    bam(r, c);
-  };
+  const ch=(a,b)=>`<line x1="${LE+3*O}" y1="${LE+a*O}" x2="${LE+5*O}"
+    y2="${LE+b*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
+  s+=ch(0,2)+ch(2,0)+ch(7,9)+ch(9,7);
+  s+=`<text x="${LE+1.9*O}" y="${LE+4.62*O}" fill="var(--luoi)" font-size="21"
+      font-family="serif" opacity=".75">楚河</text>
+      <text x="${LE+5.3*O}" y="${LE+4.62*O}" fill="var(--luoi)" font-size="21"
+      font-family="serif" opacity=".75">漢界</text></svg>`;
+  const b=document.getElementById('ban'); b.innerHTML=s;
+  const lop=document.createElement('div'); lop.className='lop-bam';
+  lop.onclick=e=>{ const h=b.getBoundingClientRect();
+    const c=Math.round((e.clientX-h.left-LE)/O), r=Math.round((e.clientY-h.top-LE)/O);
+    if(r<0||r>9||c<0||c>8) return; const [br,bc]=tuMH(r,c); bam(br,bc); };
   b.appendChild(lop);
 }
 
 function ve(){
-  const b = document.getElementById('ban');
+  const b=document.getElementById('ban');
   b.querySelectorAll('.quan,.cham').forEach(e=>e.remove());
   if(!banCo) return;
+  const kt=O*.82;
   for(let r=0;r<10;r++) for(let c=0;c<9;c++){
-    const p = banCo[r][c];
-    if(p==='.') continue;
-    const hoa = p===p.toUpperCase();
-    const d = document.createElement('div');
-    d.className = 'quan ' + (hoa?'do':'den');
-    const kt = O*0.82;
-    d.style.cssText = `width:${kt}px;height:${kt}px;left:${LE+c*O-kt/2}px;
-      top:${LE+r*O-kt/2}px;font-size:${kt*0.55}px`;
-    d.textContent = TEN[p.toUpperCase()][hoa?1:0];
-    if(chon && chon[0]===r && chon[1]===c) d.classList.add('chon');
-    if(vuaDi && ((vuaDi[0]===r&&vuaDi[1]===c)||(vuaDi[2]===r&&vuaDi[3]===c)))
+    const p=banCo[r][c]; if(p==='.') continue;
+    const hoa=p===p.toUpperCase();
+    const d=document.createElement('div');
+    d.className='quan '+(hoa?'do':'den');
+    const [mr,mc]=raMH(r,c);
+    d.style.cssText=`width:${kt}px;height:${kt}px;left:${LE+mc*O-kt/2}px;
+      top:${LE+mr*O-kt/2}px;font-size:${kt*.55}px`;
+    d.textContent=TEN[p.toUpperCase()][hoa?1:0];
+    if(chon&&chon[0]===r&&chon[1]===c) d.classList.add('chon');
+    if(vuaDi&&((vuaDi[0]===r&&vuaDi[1]===c)||(vuaDi[2]===r&&vuaDi[3]===c)))
       d.classList.add('vua-di');
-    // Quan dang bi nham an: rung nhe de nhin ra ngay
-    if(chon && hopLe.some(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c))
+    if(chon&&hopLe.some(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c))
       d.classList.add('se-bi-an');
-    d.onclick = ()=>bam(r,c);
+    d.onclick=()=>bam(r,c);
     b.appendChild(d);
   }
   if(chon) hopLe.filter(m=>m[0]===chon[0]&&m[1]===chon[1]).forEach(m=>{
-    const an = banCo[m[2]][m[3]] !== '.';
-    const k = an ? O*0.82 : 14;
-    const d = document.createElement('div');
-    d.className = 'cham' + (an?' an':'');
-    d.style.cssText = `width:${k}px;height:${k}px;left:${LE+m[3]*O-k/2}px;
-      top:${LE+m[2]*O-k/2}px`;
+    const an=banCo[m[2]][m[3]]!=='.', k=an?kt:14;
+    const d=document.createElement('div'); d.className='cham'+(an?' an':'');
+    const [mr,mc]=raMH(m[2],m[3]);
+    d.style.cssText=`width:${k}px;height:${k}px;left:${LE+mc*O-k/2}px;
+      top:${LE+mr*O-k/2}px`;
     b.appendChild(d);
   });
 }
 
 function veMuiTen(){
-  const b = document.getElementById('ban');
+  const b=document.getElementById('ban');
   b.querySelectorAll('.mui-ten').forEach(e=>e.remove());
   if(!goiY) return;
-  const [r0,c0,r1,c1] = goiY;
-  const x1 = LE+c0*O, y1 = LE+r0*O, x2 = LE+c1*O, y2 = LE+r1*O;
-  // lui dau mui ten lai mot chut de khong che quan
-  const dx = x2-x1, dy = y2-y1, d = Math.hypot(dx,dy) || 1;
-  const lui = O*0.34;
-  const ex = x2 - dx/d*lui, ey = y2 - dy/d*lui;
-  const w = LE*2+O*8, h = LE*2+O*9;
-  const mau = benDi === 'trang' ? '#e74c3c' : '#2c3e50';
-  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  const [a0,b0]=raMH(goiY[0],goiY[1]), [a1,b1]=raMH(goiY[2],goiY[3]);
+  const x1=LE+b0*O, y1=LE+a0*O, x2=LE+b1*O, y2=LE+a1*O;
+  const dx=x2-x1, dy=y2-y1, d=Math.hypot(dx,dy)||1, lui=O*.34;
+  const ex=x2-dx/d*lui, ey=y2-dy/d*lui;
+  const mau=benDi==='trang'?'#e74c3c':'#4a9eff';
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('class','mui-ten');
-  svg.setAttribute('width',w); svg.setAttribute('height',h);
-  svg.innerHTML = `
-    <defs><marker id="dau" markerWidth="4" markerHeight="4" refX="2.2" refY="2"
-      orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/></marker></defs>
-    <line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}" stroke="${mau}"
-      stroke-width="7" stroke-linecap="round" marker-end="url(#dau)"
-      opacity="0.78"/>`;
+  svg.setAttribute('width',LE*2+O*8); svg.setAttribute('height',LE*2+O*9);
+  svg.innerHTML=`<defs><marker id="dau" markerWidth="4" markerHeight="4"
+    refX="2.2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/>
+    </marker></defs><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"
+    stroke="${mau}" stroke-width="7" stroke-linecap="round"
+    marker-end="url(#dau)" opacity=".75"/>`;
   b.appendChild(svg);
 }
 
-function doiCheDo(){
-  goiY = null;
-  veMuiTen();
-  if(tuChoi() && van) xinGoiY();
-  document.getElementById('tt').innerHTML = tuChoi()
-    ? 'Tự chơi hai bên — bạn đi cả Đỏ và Đen'
-    : (benDi==='trang' ? 'Đến lượt bạn' : 'Máy đang nghĩ…');
-}
+function veLai(){ ve(); veMuiTen(); }
+function xoayBan(){ xoay=!xoay; veLai(); }
 
-async function xinGoiY(){
-  const phien = ++phienGoiY;
-  document.getElementById('ky').innerHTML = 'Đang phân tích…';
-  const d = await goi('/api/goi-y', {ma_van:van,
-    muc_do:document.getElementById('mucDo').value});
-  // Nguoi da di nuoc khac trong luc cho -> ket qua nay da cu, bo di.
-  // Khong co buoc nay thi mui ten va thanh danh gia se nhay lung tung.
-  if(phien !== phienGoiY) return;
-  if(d.nuoc){ goiY = d.nuoc; veMuiTen(); }
-  if(d.diem!==undefined){ thanh(d.diem); diemTruoc = d.diem; }
-  if(d.do_sau) document.getElementById('ky').innerHTML =
-    `Gợi ý cho <b>${d.ben==='trang'?'Đỏ':'Đen'}</b> · độ sâu <b>${d.do_sau}</b>
-     · <b>${(d.so_nut/1000).toFixed(0)}k</b> nút`;
+function bay(mv, xong){
+  const b=document.getElementById('ban'), kt=O*.82;
+  const [sr,sc]=raMH(mv[0],mv[1]), [dr,dc]=raMH(mv[2],mv[3]);
+  const q=[...b.querySelectorAll('.quan')].find(e=>
+    Math.abs(parseFloat(e.style.left)-(LE+sc*O-kt/2))<2 &&
+    Math.abs(parseFloat(e.style.top)-(LE+sr*O-kt/2))<2);
+  if(!q){ xong(); return; }
+  amThanh(banCo[mv[2]][mv[3]]!=='.'?'an':'di');
+  q.classList.add('bay');
+  requestAnimationFrame(()=>{ q.style.left=(LE+dc*O-kt/2)+'px';
+                              q.style.top=(LE+dr*O-kt/2)+'px'; });
+  setTimeout(xong,265);
 }
 
 function bam(r,c){
-  // Che do tu choi: van cho bam khi dang phan tich - nguoi choi khong phai doi.
-  // Ket qua phan tich den muon se bi bo qua nho bien phienGoiY.
   if(!van) return;
-  if(dangCho && !tuChoi()) return;
+  if(dangCho&&!tuChoi()) return;
   if(chon){
-    const mv = hopLe.find(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c);
+    const mv=hopLe.find(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c);
     if(mv){ chon=null; di(mv); return; }
   }
-  const p = banCo[r][c];
-  // Che do choi voi may: chi chon quan Do. Che do tu choi: chon ben dang di.
-  const duoc = p!=='.' && hopLe.some(m=>m[0]===r&&m[1]===c) &&
-               (tuChoi() || p===p.toUpperCase());
-  chon = duoc ? [r,c] : null;
+  const p=banCo[r][c];
+  const minh=document.getElementById('benCam').value;
+  const cuaMinh = minh==='trang' ? p===p.toUpperCase() : p===p.toLowerCase();
+  chon = (p!=='.'&&hopLe.some(m=>m[0]===r&&m[1]===c)&&(tuChoi()||cuaMinh))?[r,c]:null;
   ve();
+}
+
+function thanh(d){
+  document.getElementById('thanhDo').style.height=Math.max(0,Math.min(100,d/10))+'%';
+  document.getElementById('soDo').textContent=d;
+  document.getElementById('soDen').textContent=1000-d;
+  document.getElementById('diemTo').textContent=d;
+  const n=document.getElementById('nhanDiem');
+  if(d>=990){ n.textContent=T.do_thang; n.style.background='#c0392b'; }
+  else if(d<=10){ n.textContent=T.den_thang; n.style.background='#1c1c1c'; }
+  else if(d>545){ n.textContent=T.do_loi; n.style.background='#8b3a2f'; }
+  else if(d<455){ n.textContent=T.den_loi; n.style.background='#2c3e50'; }
+  else{ n.textContent=T.can_bang; n.style.background='#3a3f49'; }
+}
+
+function chamNuoc(truoc,sau,ben){
+  const l = ben==='trang' ? sau-truoc : truoc-sau;
+  if(l>=-12) return{t:T.tot,m:'#2ecc71',l};
+  if(l>=-40) return{t:T.khong_chuan,m:'#f1c40f',l};
+  if(l>=-110) return{t:T.sai_lam,m:'#e67e22',l};
+  return{t:T.sai_nghiem,m:'#e74c3c',l};
 }
 
 function capNhat(d){
-  banCo = d.ban_co.map(h=>h.split(''));
-  hopLe = d.nuoc_hop_le || [];
-  benDi = d.ben_di;
-  if(d.diem !== undefined) thanh(d.diem);
-  const t = document.getElementById('tt');
-  if(d.trang_thai !== 'dang_choi'){
-    const ten = {trang_thang:'Bạn thắng!', den_thang:'Máy thắng',
-                 hoa:'Hoà'}[d.trang_thai];
-    t.innerHTML = `<b>${ten}</b><br><small>${d.ly_do||''}</small>`;
-  } else if(tuChoi()){
-    t.innerHTML = `Tự chơi — đến lượt <b>${d.ben_di==='trang'?'Đỏ':'Đen'}</b>`
-      + (d.bi_chieu ? ' — <b>đang bị chiếu!</b>' : '');
-  } else {
-    t.innerHTML = (d.ben_di==='trang' ? 'Đến lượt bạn' : 'Máy đang nghĩ…')
-      + (d.bi_chieu ? ' — <b>đang bị chiếu!</b>' : '');
+  banCo=d.ban_co.map(h=>h.split('')); hopLe=d.nuoc_hop_le||[]; benDi=d.ben_di;
+  if(d.fen) document.getElementById('oFen').value=d.fen;
+  if(d.diem!==undefined) thanh(d.diem);
+  const t=document.getElementById('ttVan'), minh=document.getElementById('benCam').value;
+  if(d.trang_thai!=='dang_choi'){
+    const ai={trang_thang:'trang',den_thang:'den'}[d.trang_thai];
+    t.innerHTML=`<b>${d.trang_thai==='hoa'?T.hoa:(tuChoi()
+      ? (ai==='trang'?T.do_thang:T.den_thang)
+      : (ai===minh?T.ban_thang:T.may_thang))}</b> <span style="color:var(--mo)">${d.ly_do||''}</span>`;
+    amThanh('het');
+  }else{
+    t.innerHTML = tuChoi()
+      ? `${T.luot_cua} <b>${d.ben_di==='trang'?'Đỏ':'Đen'}</b>`
+      : (d.ben_di===minh?T.den_luot:T.may_nghi);
+    if(d.bi_chieu){ t.innerHTML+=` — <b style="color:#e74c3c">${T.bi_chieu}</b>`;
+                    amThanh('chieu'); }
   }
-  if(d.do_sau) document.getElementById('ky').innerHTML =
-    `Độ sâu <b>${d.do_sau}</b> · <b>${(d.so_nut/1000).toFixed(0)}k</b> nút
-     · <b>${d.giay}</b> giây`;
-  ve();
-  veMuiTen();
-  if(d.trang_thai !== 'dang_choi') amThanh('het');
-  else if(d.bi_chieu) amThanh('chieu');
+  veLai();
 }
 
-function thanh(diem){
-  // Truoc day kep o 2-98% nen diem 1000 khong lap day thanh. Nay cho lap tron.
-  const pt = Math.max(0, Math.min(100, diem/10));
-  document.getElementById('thanhTrang').style.height = pt+'%';
-  document.getElementById('soTrang').textContent = diem;
-  document.getElementById('soDen').textContent = 1000-diem;
+function hienPhanTich(p){
+  if(p.nuoc_tot){
+    document.getElementById('benTot').textContent=p.ben_di==='trang'?'Đỏ':'Đen';
+    document.getElementById('nuocTot').textContent=kyHieu(p.nuoc_tot);
+    const bc=(p.bien_chinh||[]).map(kyHieu).join(' ');
+    document.getElementById('pv').innerHTML = bc
+      ? `${T.bien_chinh}: <b>${bc}</b><br>${T.neu_di} ${kyHieu(p.nuoc_tot)} → ${T.diem_thanh} ${p.diem}`
+      : '';
+    goiY=p.nuoc_tot; veMuiTen();
+  }
+  document.getElementById('nhanSach').style.display = p.trong_sach?'inline-block':'none';
+  const k=document.getElementById('bangKy');
+  k.innerHTML=`
+    <span>${T.luong_gia}</span><span>NNUE + ${T.tinh}</span>
+    <span>${T.tinh}</span><span>${p.diem_tinh??'—'}</span>
+    <span>${T.sau}</span><span>${p.diem??'—'}</span>
+    <span>${T.do_sau}</span><span>${p.do_sau??'—'}</span>
+    <span>${T.so_nut}</span><span>${(p.so_nut||0).toLocaleString()}</span>
+    <span>${T.thoi_gian}</span><span>${p.giay??'—'}s (${((p.nut_moi_giay||0)/1000).toFixed(0)}k ${T.nut_giay})</span>`;
 }
 
-async function goi(duong, body){
-  const r = await fetch(duong,{method:'POST',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
-  return r.json();
+const goi=async(d,b)=>(await fetch(d,{method:'POST',
+  headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})).json();
+
+async function phanTich(){
+  const p=++phien;
+  const d=await goi('/api/phan-tich',{ma_van:van,
+    muc_do:document.getElementById('mucDo').value});
+  if(p!==phien) return;
+  if(d.diem!==undefined){ thanh(d.diem); diemTruoc=d.diem; }
+  hienPhanTich(d);
 }
+const neuTuChoi=()=>{ if(tuChoi()&&van) phanTich(); };
+function doiCheDo(){ goiY=null; veMuiTen(); neuTuChoi(); }
 
 async function vanMoi(){
-  const d = await goi('/api/van-moi');
-  van = d.ma_van; chon=null; vuaDi=null; goiY=null;
+  const ben=document.getElementById('benCam').value;
+  xoay=(ben==='den');
+  const d=await goi('/api/van-moi',{nguoi_cam:ben,
+    muc_do:document.getElementById('mucDo').value});
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; phien++;
+  vuaDi=d.nuoc_may||null; diemTruoc=505;
+  if(d.nuoc_may) lichSu.push(d.nuoc_may);
   document.getElementById('ds').innerHTML='';
-  document.getElementById('ky').textContent='—';
-  document.getElementById('cham').textContent='—';
-  diemTruoc = 505; phienGoiY++;
-  capNhat(d);
-  if(tuChoi()) xinGoiY();
+  document.getElementById('nuocTot').textContent='—';
+  document.getElementById('pv').innerHTML='';
+  document.getElementById('chamNuoc').textContent='';
+  capNhat(d); veDs();
+  if(tuChoi()) phanTich();
 }
 
 async function di(mv){
-  dangCho = true;
-  const benTruoc = benDi;
-  goiY = null;
-  phienGoiY++;                       // huy moi goi y dang cho
-  chon = null;
-  // Cho quan truot sang o moi TRUOC khi goi may chu, de nguoi choi thay ngay
-  // nuoc di cua minh thay vi doi may nghi xong moi thay ban co doi.
-  await new Promise(r => bay(mv, r));
-  vuaDi = mv;
-  document.getElementById('tt').innerHTML = tuChoi() ? 'Đang phân tích…'
-                                                     : 'Máy đang nghĩ…';
-  const d = await goi('/api/di',{ma_van:van, nuoc:mv, tu_choi:tuChoi(),
+  dangCho=true; const benTruoc=benDi;
+  goiY=null; phien++; chon=null;
+  await new Promise(r=>bay(mv,r));
+  vuaDi=mv; lichSu.push(mv);
+  document.getElementById('vuaDiTxt').textContent=kyHieu(mv);
+  document.getElementById('ttVan').textContent = tuChoi()?T.dang_phan_tich:T.may_nghi;
+  const d=await goi('/api/di',{ma_van:van,nuoc:mv,tu_choi:tuChoi(),
     muc_do:document.getElementById('mucDo').value});
-  dangCho = false;
-  if(d.loi){ document.getElementById('tt').textContent = 'Lỗi: '+d.loi; return; }
+  dangCho=false;
+  if(d.loi){ document.getElementById('ttVan').textContent='⚠ '+d.loi; return; }
+  const dc=d.diem_nuoc_nguoi??d.diem;
+  if(dc!==undefined){
+    const c=chamNuoc(diemTruoc,dc,benTruoc);
+    document.getElementById('chamNuoc').innerHTML=
+      ` · <b style="color:${c.m}">${c.t}</b> <span style="color:var(--mo)">${c.l>=0?'+':''}${c.l}</span>`;
+  }
   if(d.nuoc_may){
-    // Ve lai ban co o trang thai TRUOC nuoc may, roi cho quan may bay
-    banCo = d.ban_co.map(h=>h.split(''));
-    const [r0,c0,r1,c1] = d.nuoc_may;
-    banCo[r0][c0] = banCo[r1][c1]; banCo[r1][c1] = '.';
-    hopLe = []; chon = null; ve();
-    await new Promise(r => bay(d.nuoc_may, r));
-    vuaDi = d.nuoc_may;
+    banCo=d.ban_co.map(h=>h.split(''));
+    const [r0,c0,r1,c1]=d.nuoc_may;
+    banCo[r0][c0]=banCo[r1][c1]; banCo[r1][c1]='.';
+    hopLe=[]; chon=null; ve();
+    await new Promise(r=>bay(d.nuoc_may,r));
+    vuaDi=d.nuoc_may; lichSu.push(d.nuoc_may);
+    document.getElementById('vuaDiTxt').textContent=kyHieu(d.nuoc_may);
   }
-  themDs(mv, d.nuoc_may);
-  // Cham nuoc vua di: so diem truoc va sau
-  if(d.diem !== undefined){
-    const c = chamNuoc(diemTruoc, d.diem, benTruoc);
-    document.getElementById('cham').innerHTML =
-      `<b style="color:${c.mau}">${c.ten}</b>
-       <span style="color:var(--mo)">${c.lech>=0?'+':''}${c.lech} điểm</span>`;
-    diemTruoc = d.diem;
-  }
+  diemTruoc=d.diem; capNhat(d); veDs();
+  if(tuChoi()&&d.trang_thai==='dang_choi') phanTich();
+}
+
+async function diGoiY(){
+  if(!goiY||dangCho) return;
+  const mv=goiY;
+  if(hopLe.some(m=>m.join()===mv.join())) di(mv);
+}
+
+async function lui(){
+  if(!van||dangCho) return;
+  const bo = tuChoi()?1:2;
+  const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu});
+  lichSu=lichSu.slice(0,Math.max(0,lichSu.length-bo));
+  vuaDi=lichSu.length?lichSu[lichSu.length-1]:null;
+  goiY=null; phien++; chon=null;
+  document.getElementById('vuaDiTxt').textContent=kyHieu(vuaDi);
+  document.getElementById('chamNuoc').textContent='';
+  capNhat(d); veDs();
+  if(tuChoi()) phanTich();
+}
+
+async function napFen(){
+  const f=document.getElementById('oFen').value.trim();
+  if(!f) return;
+  const d=await goi('/api/nap-fen',{fen:f});
+  if(d.loi){ document.getElementById('ttVan').textContent='⚠ '+d.loi; return; }
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; vuaDi=null; phien++;
+  document.getElementById('ds').innerHTML='';
   capNhat(d);
-  if(tuChoi() && d.trang_thai==='dang_choi') xinGoiY();
+  if(tuChoi()) phanTich();
 }
 
-// Cham chat luong mot nuoc di dua tren muc diem thay doi. Nguong tren thang
-// 0..1000 cua engine, quy ve goc nhin cua BEN VUA DI.
-function chamNuoc(truoc, sau, benVuaDi){
-  const lech = benVuaDi === 'trang' ? (sau - truoc) : (truoc - sau);
-  if(lech >= -12) return {ten:'Tốt',        mau:'#2ecc71', lech};
-  if(lech >= -40) return {ten:'Không chuẩn', mau:'#f1c40f', lech};
-  if(lech >= -110) return {ten:'Sai lầm',    mau:'#e67e22', lech};
-  return                  {ten:'Sai nghiêm trọng', mau:'#e74c3c', lech};
+function veDs(){
+  const ds=document.getElementById('ds'); ds.innerHTML='';
+  for(let i=0;i<lichSu.length;i+=2){
+    const d=document.createElement('div');
+    d.innerHTML=`<span>${i/2+1}.</span><span>${kyHieu(lichSu[i])}</span>
+      <span style="color:var(--mo)">${lichSu[i+1]?kyHieu(lichSu[i+1]):''}</span>`;
+    ds.appendChild(d);
+  }
+  ds.scrollTop=ds.scrollHeight;
 }
 
-function themDs(cua_ban, cua_may){
-  const ds = document.getElementById('ds');
-  const so = ds.children.length + 1;
-  const k = m => m ? `${m[1]}${9-m[0]}→${m[3]}${9-m[2]}` : '—';
-  const d = document.createElement('div');
-  d.innerHTML = `<span>${so}.</span><span>${k(cua_ban)}</span>
-                 <span style="color:var(--mo)">${k(cua_may)}</span>`;
-  ds.appendChild(d);
-  ds.scrollTop = ds.scrollHeight;
-}
+fetch('/api/dia-chi',{method:'POST',body:'{}',
+  headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>{
+    if(d.lan) document.getElementById('chiaSe').textContent=T.chia_se+': '+d.lan;
+  }).catch(()=>{});
 
-// --- Am thanh ---
-// Hai tep do nguoi dung them: tieng quan co va tieng thang cuoc.
-// Chieu tuong va an quan van tao bang Web Audio: an quan dung chinh tep di
-// quan nhung ha cao do va tang am luong cho nang hon, nen khong can them tep.
-const TEP = {
-  di:  new Audio('sound-move.mp3'),
-  win: new Audio('sound-win.wav'),
-};
-TEP.di.volume = 0.75;
-TEP.win.volume = 0.55;
-
-let AC = null;
-function amThanh(loai){
-  try{
-    if(loai === 'di' || loai === 'an'){
-      const a = TEP.di.cloneNode();            // clone de di nhanh khong bi cat
-      a.volume = loai === 'an' ? 1.0 : 0.7;
-      a.playbackRate = loai === 'an' ? 0.72 : 1.0;   // an quan: tram va nang hon
-      a.play().catch(()=>{});
-      return;
-    }
-    if(loai === 'het'){
-      const a = TEP.win.cloneNode();
-      a.volume = 0.55;
-      a.play().catch(()=>{});
-      return;
-    }
-    if(loai === 'chieu'){
-      // Chieu tuong: hai not len cao, bao dong. Tao bang Web Audio vi khong
-      // co tep rieng cho tinh huong nay.
-      AC = AC || new (window.AudioContext||window.webkitAudioContext)();
-      const t = AC.currentTime;
-      [880, 1250].forEach((f,i)=>{
-        const o = AC.createOscillator(), g = AC.createGain();
-        o.type='sine'; o.frequency.value=f;
-        g.gain.setValueAtTime(0, t+i*0.1);
-        g.gain.linearRampToValueAtTime(0.2, t+i*0.1+0.02);
-        g.gain.exponentialRampToValueAtTime(0.001, t+i*0.1+0.22);
-        o.connect(g); g.connect(AC.destination);
-        o.start(t+i*0.1); o.stop(t+i*0.1+0.3);
-      });
-    }
-  }catch(e){}
-}
-
-// Cho quan co TRUOT tu o cu sang o moi thay vi nhay cai vu
-function bay(mv, xong){
-  const b = document.getElementById('ban');
-  const kt = O*0.82;
-  const q = [...b.querySelectorAll('.quan')].find(e =>
-    Math.abs(parseFloat(e.style.left) - (LE+mv[1]*O-kt/2)) < 2 &&
-    Math.abs(parseFloat(e.style.top)  - (LE+mv[0]*O-kt/2)) < 2);
-  if(!q){ xong(); return; }
-  const anQuan = banCo[mv[2]][mv[3]] !== '.';
-  q.classList.add('bay');
-  requestAnimationFrame(()=>{
-    q.style.left = (LE+mv[3]*O-kt/2)+'px';
-    q.style.top  = (LE+mv[2]*O-kt/2)+'px';
-  });
-  setTimeout(()=>{ amThanh(anQuan?'an':'di'); xong(); }, 265);
-}
-
+datNN(localStorage.getItem('nn')||'vi');
 veBan();
 vanMoi();
 </script>
