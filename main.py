@@ -33,7 +33,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Phan tich the co tuong")
     p.add_argument("fen", nargs="?", help="FEN cua the co (bo trong = the co khoi dau)")
     p.add_argument("--depth", type=int, default=1, help="Do sau tim kiem")
-    p.add_argument("--tron", nargs="?", type=float, const=0.5, default=None,
+    p.add_argument("--tron", nargs="?", type=float, const=0.4, default=None,
                    help="Tron ham thu cong voi mang NNUE (mac dinh 0.5 = 50/50). "
                         "Day la cau hinh MANH NHAT do duoc.")
     p.add_argument("--mang", default="weights/nnue_tanh.npz",
